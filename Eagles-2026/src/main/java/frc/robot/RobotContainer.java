@@ -1,0 +1,100 @@
+package frc.robot;
+
+import java.io.File;
+
+import com.pathplanner.lib.auto.AutoBuilder;
+
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.Filesystem;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
+import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
+
+import frc.robot.Constants.OperatorConstants;
+import frc.robot.subsystems.ClimbSubsystem;
+import frc.robot.subsystems.HopperSubsystem;
+import frc.robot.subsystems.IntakeSubsystem;
+import frc.robot.subsystems.ShooterSubsystem;
+import frc.robot.subsystems.SwerveSubsystem;
+
+import swervelib.SwerveInputStream;
+
+public class RobotContainer {
+
+    private final CommandXboxController driverXbox = new CommandXboxController(0);
+
+    private final SwerveSubsystem drivebase = new SwerveSubsystem(new File(Filesystem.getDeployDirectory(), "swerve"));
+
+    private final ClimbSubsystem climbSubsystem = new ClimbSubsystem();
+    private final HopperSubsystem hopperSubsystem = new HopperSubsystem();
+    private final IntakeSubsystem intakeSubsystem = new IntakeSubsystem();
+    private final ShooterSubsystem shooterSubsystem = new ShooterSubsystem();
+
+    private SendableChooser<Command> autoChooser = new SendableChooser<>();
+
+    private boolean m_intakeOpen = false;
+
+    private final SwerveInputStream driveAngularVelocity = SwerveInputStream.of(
+            drivebase.getSwerveDrive(),
+            () -> -driverXbox.getLeftY(),
+            () -> -driverXbox.getLeftX())
+            .withControllerRotationAxis(driverXbox::getRightX)
+            .scaleRotation(-1)
+            .deadband(OperatorConstants.DEADBAND)
+            .allianceRelativeControl(true);
+
+    public RobotContainer() {
+        configureBindings();
+
+        DriverStation.silenceJoystickConnectionWarning(true);
+
+        autoChooser = AutoBuilder.buildAutoChooser();
+        SmartDashboard.putData(autoChooser);
+    }
+
+    private void configureBindings() {
+        // Default behaviors
+        drivebase.setDefaultCommand(drivebase.driveFieldOriented(driveAngularVelocity));
+        hopperSubsystem.setDefaultCommand(hopperSubsystem.cmdIndexToSensor());
+        shooterSubsystem.setDefaultCommand(shooterSubsystem.aimAtTarget(drivebase::getPose, () -> true));
+
+        driverXbox.start().onTrue(Commands.runOnce(drivebase::zeroGyro));
+
+        // Shoot: spin up -> wait for speed -> feed
+        driverXbox.rightTrigger()
+                .whileTrue(
+                        shooterSubsystem.cmdSetShooterRpm(5000)
+                                .andThen(new WaitUntilCommand(shooterSubsystem::atShooterSpeed))
+                                .andThen(hopperSubsystem.cmdPush(0.25)))
+                .onFalse(shooterSubsystem.cmdStopShooter().andThen(hopperSubsystem.cmdStop()));
+
+        // Intake open/close toggle (flip boolean first, then choose)
+        driverXbox.rightBumper().onTrue(
+                Commands.runOnce(() -> m_intakeOpen = !m_intakeOpen)
+                        .andThen(Commands.either(
+                                intakeSubsystem.cmdOpen(),
+                                intakeSubsystem.cmdClose(),
+                                () -> m_intakeOpen)));
+
+        // Intake rollers
+        driverXbox.leftTrigger()
+                .whileTrue(intakeSubsystem.cmdRunRollerRpm(-3000))
+                .onFalse(intakeSubsystem.cmdStopRoller());
+
+        // Climb
+        driverXbox.a().whileTrue(climbSubsystem.cmdUp(0.5)).onFalse(climbSubsystem.cmdStop());
+        driverXbox.y().whileTrue(climbSubsystem.cmdDown(0.5)).onFalse(climbSubsystem.cmdStop());
+    }
+
+    public Command getAutonomousCommand() {
+        return autoChooser.getSelected();
+    }
+
+    public void setMotorBrake(boolean brake) {
+        drivebase.setMotorBrake(brake);
+    }
+}
