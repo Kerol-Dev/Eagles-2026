@@ -4,9 +4,12 @@ import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-
+import frc.robot.Constants;
 import frc.robot.LimelightHelpers;
+import frc.robot.util.TurretAimMath;
 
 public class VisionSubsystem extends SubsystemBase {
 
@@ -146,11 +149,7 @@ public class VisionSubsystem extends SubsystemBase {
         }
         return cand.avgTagDist < best.avgTagDist;
     }
-
-    // ------------------------
-    // Optional inspector helpers
-    // ------------------------
-
+    
     public double getLastRightLatencyMs() {
         return LimelightHelpers.getLatency_Capture("limelight-right")
                 + LimelightHelpers.getLatency_Pipeline("limelight-right");
@@ -162,5 +161,16 @@ public class VisionSubsystem extends SubsystemBase {
             return null;
         }
         return est.pose.getRotation();
+    }
+
+    @Override
+    public void periodic() {
+        if (!Constants.USE_DEBUGGING)
+            return;
+        
+        SmartDashboard.putNumber("Time_Elapsed", DriverStation.getMatchTime());
+        SmartDashboard.putBoolean("Has_Any_Targets", getBestVisionPose() != null);
+        boolean isRedAlliance = !DriverStation.getAlliance().isEmpty() && DriverStation.getAlliance().get().equals(DriverStation.Alliance.Red);
+        SmartDashboard.putNumber("Target_Distance", TurretAimMath.solveForBasket(m_poseEstimatorConsumer.getEstimatedPosition(), isRedAlliance).distanceMeters());
     }
 }

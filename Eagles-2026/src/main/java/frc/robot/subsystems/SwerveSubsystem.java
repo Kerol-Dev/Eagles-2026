@@ -17,6 +17,7 @@ import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.trajectory.Trajectory;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -33,10 +34,13 @@ import swervelib.parser.SwerveDriveConfiguration;
 import swervelib.parser.SwerveParser;
 import swervelib.telemetry.SwerveDriveTelemetry;
 import swervelib.telemetry.SwerveDriveTelemetry.TelemetryVerbosity;
+import edu.wpi.first.wpilibj.smartdashboard.Field2d;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 public class SwerveSubsystem extends SubsystemBase {
     private final SwerveDrive swerveDrive;
     private final VisionSubsystem visionSubsystem;
+    private final Field2d m_field = new Field2d();
 
     public SwerveSubsystem(
             File directory) {
@@ -68,6 +72,7 @@ public class SwerveSubsystem extends SubsystemBase {
     }
 
     public void setupPathPlanner() {
+        SmartDashboard.putData("Field", m_field);
         // Load the RobotConfig from the GUI settings.
         RobotConfig config;
         try {
@@ -118,6 +123,7 @@ public class SwerveSubsystem extends SubsystemBase {
                 swerveDrive.getFieldVelocity().vxMetersPerSecond,
                 swerveDrive.getFieldVelocity().omegaRadiansPerSecond);
         visionSubsystem.updatePoseEstimator();
+        m_field.setRobotPose(getPose()); // publish pose every loop [web:228]
     }
 
     public Command driveToPose(Pose2d pose) {
@@ -191,6 +197,9 @@ public class SwerveSubsystem extends SubsystemBase {
     }
 
     public Pose2d getPose() {
+        if (RobotBase.isSimulation() && swerveDrive.getSimulationDriveTrainPose().isPresent()) {
+            return swerveDrive.getSimulationDriveTrainPose().get();
+        }
         return swerveDrive.getPose();
     }
 
@@ -206,7 +215,7 @@ public class SwerveSubsystem extends SubsystemBase {
         swerveDrive.zeroGyro();
     }
 
-    private boolean isRedAlliance() {
+    public boolean isRedAlliance() {
         var alliance = DriverStation.getAlliance();
         return alliance.isPresent() ? alliance.get() == DriverStation.Alliance.Red : false;
     }

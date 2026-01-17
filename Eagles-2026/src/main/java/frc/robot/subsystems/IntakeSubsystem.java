@@ -2,8 +2,10 @@ package frc.robot.subsystems;
 
 import static frc.robot.Constants.Intake.*;
 
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.Constants;
 
 import com.revrobotics.spark.SparkFlex;
 import com.revrobotics.spark.SparkMax;
@@ -134,5 +136,16 @@ public class IntakeSubsystem extends SubsystemBase {
 
     public Command cmdStopRoller() {
         return runOnce(this::stopRoller).withName("Intake.StopRoller");
+    }
+
+    @Override
+    public void periodic() {
+        if (!Constants.USE_DEBUGGING)
+            return;
+        SmartDashboard.putBoolean("Intake_Is_Open",
+                m_angleEncoder.getPosition() >= (kOpenAngleDeg + kClosedAngleDeg) / 2);
+        SmartDashboard.putNumber("Intake_Angle_Deg", getAngleDeg());
+        SmartDashboard.putNumber("Intake_Angle_Target_Deg", getAngleTargetDeg());
+        SmartDashboard.putNumber("Intake_Roller_RPM", getRollerRpm());
     }
 }

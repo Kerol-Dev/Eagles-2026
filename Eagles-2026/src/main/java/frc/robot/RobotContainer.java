@@ -3,6 +3,8 @@ package frc.robot;
 import java.io.File;
 
 import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.auto.NamedCommands;
+import com.pathplanner.lib.events.EventTrigger;
 
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Filesystem;
@@ -52,6 +54,14 @@ public class RobotContainer {
 
         DriverStation.silenceJoystickConnectionWarning(true);
 
+        new EventTrigger("Run_Intake").whileTrue(intakeSubsystem.cmdOpen()).onFalse(intakeSubsystem.cmdClose());
+        NamedCommands.registerCommand("Shoot_All",
+                shooterSubsystem.cmdSetShooterRpm(3000)
+                        .andThen(new WaitUntilCommand(() -> shooterSubsystem.atShooterSpeed()))
+                        .andThen(hopperSubsystem.cmdPush(0.25))
+                        .andThen(new WaitUntilCommand(() -> hopperSubsystem.isEmptyFor2s()))
+                        .andThen(shooterSubsystem.cmdStopShooter()).andThen(hopperSubsystem.cmdStop()));
+
         autoChooser = AutoBuilder.buildAutoChooser();
         SmartDashboard.putData(autoChooser);
     }
@@ -60,7 +70,7 @@ public class RobotContainer {
         // Default behaviors
         drivebase.setDefaultCommand(drivebase.driveFieldOriented(driveAngularVelocity));
         hopperSubsystem.setDefaultCommand(hopperSubsystem.cmdIndexToSensor());
-        shooterSubsystem.setDefaultCommand(shooterSubsystem.aimAtTarget(drivebase::getPose, () -> true));
+        shooterSubsystem.setDefaultCommand(shooterSubsystem.aimAtTarget(drivebase::getPose, drivebase::isRedAlliance));
 
         driverXbox.start().onTrue(Commands.runOnce(drivebase::zeroGyro));
 
