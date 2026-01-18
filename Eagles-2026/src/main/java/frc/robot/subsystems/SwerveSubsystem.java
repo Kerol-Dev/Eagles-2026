@@ -40,6 +40,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 public class SwerveSubsystem extends SubsystemBase {
     private final SwerveDrive swerveDrive;
     private final VisionSubsystem visionSubsystem;
+    private final PhotonVisionSimSubsystem photonVisionSimSubsystem;
     private final Field2d m_field = new Field2d();
 
     public SwerveSubsystem(
@@ -48,15 +49,16 @@ public class SwerveSubsystem extends SubsystemBase {
         try {
             swerveDrive = new SwerveParser(directory).createSwerveDrive(Constants.MAX_SPEED);
             visionSubsystem = new VisionSubsystem(swerveDrive.swerveDrivePoseEstimator);
+            photonVisionSimSubsystem = new PhotonVisionSimSubsystem(this::getPose,
+                    swerveDrive.swerveDrivePoseEstimator);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-        swerveDrive.setHeadingCorrection(false); // Heading correction should only be used while controlling the robot
+        swerveDrive.setHeadingCorrection(false);
         swerveDrive.setCosineCompensator(false);
         swerveDrive.setAngularVelocityCompensation(true,
                 true,
-                0.1); // Correct for skew that gets worse as angular velocity increases. Start with a
-                      // coefficient of 0.1.
+                0.1); 
         setupPathPlanner();
         RobotModeTriggers.autonomous().onTrue(Commands.runOnce(this::zeroGyroWithAlliance));
     }
@@ -69,11 +71,12 @@ public class SwerveSubsystem extends SubsystemBase {
                         Rotation2d.fromDegrees(0)));
         swerveDrive.stopOdometryThread();
         visionSubsystem = new VisionSubsystem(swerveDrive.swerveDrivePoseEstimator);
+        photonVisionSimSubsystem = new PhotonVisionSimSubsystem(this::getPose,
+                swerveDrive.swerveDrivePoseEstimator);
     }
 
     public void setupPathPlanner() {
         SmartDashboard.putData("Field", m_field);
-        // Load the RobotConfig from the GUI settings.
         RobotConfig config;
         try {
             config = RobotConfig.fromGUISettings();
@@ -119,11 +122,15 @@ public class SwerveSubsystem extends SubsystemBase {
 
     @Override
     public void periodic() {
-        visionSubsystem.setRobotMotion(
-                swerveDrive.getFieldVelocity().vxMetersPerSecond,
-                swerveDrive.getFieldVelocity().omegaRadiansPerSecond);
-        visionSubsystem.updatePoseEstimator();
-        m_field.setRobotPose(getPose()); // publish pose every loop [web:228]
+        if (!RobotBase.isSimulation()) {
+            visionSubsystem.setRobotMotion(
+                    swerveDrive.getFieldVelocity().vxMetersPerSecond,
+                    swerveDrive.getFieldVelocity().omegaRadiansPerSecond);
+            visionSubsystem.updatePoseEstimator();
+        } else {
+            photonVisionSimSubsystem.simulationPeriodic();
+        }
+        m_field.setRobotPose(getPose());
     }
 
     public Command driveToPose(Pose2d pose) {
@@ -223,7 +230,6 @@ public class SwerveSubsystem extends SubsystemBase {
     public void zeroGyroWithAlliance() {
         if (isRedAlliance()) {
             zeroGyro();
-            // Set the pose 180 degrees
             resetOdometry(new Pose2d(getPose().getTranslation(), Rotation2d.fromDegrees(180)));
         } else {
             zeroGyro();

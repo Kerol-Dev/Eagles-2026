@@ -1,5 +1,8 @@
 package frc.robot;
 
+import edu.wpi.first.math.geometry.Rotation3d;
+import edu.wpi.first.math.geometry.Transform3d;
+import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.util.Units;
 
 public final class Constants {
@@ -113,5 +116,26 @@ public final class Constants {
         public static final double kReversePercent = -0.25;
 
         public static final boolean kSensorInverted = true;
+    }
+
+    public static final class VisionSim {
+        public static final String kSimSystemName = "main";
+
+        public static final String kCamRightName = "photon-right";
+        public static final String kCamLeftName = "photon-left";
+        public static final String kCamBackName = "photon-back";
+
+        public static final Transform3d kRobotToCamRight = new Transform3d(new Translation3d(0.25, -0.20, 0.5),
+                new Rotation3d(0, 0, Math.toRadians(-40)));
+        public static final Transform3d kRobotToCamLeft = new Transform3d(new Translation3d(0.25, 0.20, 0.5),
+                new Rotation3d(0, 0, Math.toRadians(40)));
+        public static final Transform3d kRobotToCamBack = new Transform3d(new Translation3d(-0.25, 0.0, 0.5),
+                new Rotation3d(0, 0, Math.toRadians(180)));
+
+        // Basic trust (tune later)
+        public static final double kStdDevX = 0.2;
+        public static final double kStdDevY = 0.2;
+        public static final double kStdDevTheta = 2.0;
+
     }
 }
