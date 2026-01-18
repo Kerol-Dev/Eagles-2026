@@ -1,0 +1,96 @@
+{
+  "version": "2025.0",
+  "waypoints": [
+    {
+      "anchor": {
+        "x": 2.153584738243123,
+        "y": 5.527888198757764
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 1.903584738243123,
+        "y": 5.527888198757764
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 0.5118101153504875,
+        "y": 5.753229813664595
+      },
+      "prevControl": {
+        "x": 1.686805678793256,
+        "y": 5.310594498669032
+      },
+      "nextControl": {
+        "x": 0.2778597885004926,
+        "y": 5.841361786108086
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 1.8799556344276835,
+        "y": 3.306663708961845
+      },
+      "prevControl": {
+        "x": 2.443309671694765,
+        "y": 5.2542590949423245
+      },
+      "nextControl": null,
+      "isLocked": false,
+      "linkedName": null
+    }
+  ],
+  "rotationTargets": [
+    {
+      "waypointRelativePos": 1.0,
+      "rotationDegrees": -22.380135051959574
+    }
+  ],
+  "constraintZones": [
+    {
+      "name": "Constraints Zone",
+      "minWaypointRelativePos": 0.6332547169811332,
+      "maxWaypointRelativePos": 1.4811320754716977,
+      "constraints": {
+        "maxVelocity": 1.0,
+        "maxAcceleration": 4.0,
+        "maxAngularVelocity": 540.0,
+        "maxAngularAcceleration": 720.0,
+        "nominalVoltage": 12.0,
+        "unlimited": false
+      }
+    }
+  ],
+  "pointTowardsZones": [],
+  "eventMarkers": [
+    {
+      "name": "Run_Intake",
+      "waypointRelativePos": 0.15,
+      "endWaypointRelativePos": 2.3,
+      "command": null
+    }
+  ],
+  "globalConstraints": {
+    "maxVelocity": 4.0,
+    "maxAcceleration": 5.0,
+    "maxAngularVelocity": 540.0,
+    "maxAngularAcceleration": 720.0,
+    "nominalVoltage": 12.0,
+    "unlimited": false
+  },
+  "goalEndState": {
+    "velocity": 0,
+    "rotation": 6.730483934615641
+  },
+  "reversed": false,
+  "folder": "Left-Auto",
+  "idealStartingState": {
+    "velocity": 0,
+    "rotation": -30.963756532073592
+  },
+  "useDefaultConstraints": false
+}

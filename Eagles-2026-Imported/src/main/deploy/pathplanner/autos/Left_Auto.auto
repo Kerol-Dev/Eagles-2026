@@ -1,0 +1,55 @@
+{
+  "version": "2025.0",
+  "command": {
+    "type": "sequential",
+    "data": {
+      "commands": [
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Left-1"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Left-2"
+          }
+        },
+        {
+          "type": "wait",
+          "data": {
+            "waitTime": 1.0
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Left-3"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "Shoot_All"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Left-4"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "Climb_L1"
+          }
+        }
+      ]
+    }
+  },
+  "resetOdom": true,
+  "folder": null,
+  "choreoAuto": false
+}
