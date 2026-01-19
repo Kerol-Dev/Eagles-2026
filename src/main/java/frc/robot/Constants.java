@@ -15,22 +15,25 @@ public final class Constants {
 
     public static final class Intake {
         // CAN IDs
-        public static final int kAngleMotorCanId = 21; // SparkFlex + NEO Vortex
-        public static final int kRollerMotorCanId = 22; // SparkMax + NEO 1.1
+        public static final int kAngleMotorCanId = 21;
+        public static final int kRollerMotorCanId = 22;
 
         // Angle setpoints
         public static final double kOpenAngleDeg = 70.0;
         public static final double kClosedAngleDeg = 5.0;
 
         // Angle closed-loop gains
-        public static final double kAngleP = 0.08;
+        public static final double kAngleP = 2.0;
         public static final double kAngleI = 0.0;
         public static final double kAngleD = 0.0;
+        public static final double kAngleS = 0.2;
+        public static final double kAngleV = 0.12;
+        public static final double kAngleCruiseVelocity = 40.0;
+        public static final double kAngleAcceleration = 80.0;
         public static final double kAngleMinOut = -0.5;
         public static final double kAngleMaxOut = 0.5;
 
-        public static final double kAngleMotorRotationsPerMechanismRev = 50.0;
-        public static final double kAngleDegPerMotorRotation = 360.0 / kAngleMotorRotationsPerMechanismRev;
+        public static final double kGearboxRatio = 50;
 
         // Angle safety/tolerance
         public static final double kAngleToleranceDeg = 2.0;
@@ -69,9 +72,13 @@ public final class Constants {
         public static final double kTurretMaxDeg = 200.0;
 
         // Turret PID
-        public static final double kTurretP = 60.0;
+        public static final double kTurretP = 2.0;
         public static final double kTurretI = 0.0;
         public static final double kTurretD = 2.0;
+        public static final double kTurretS = 0.2;
+        public static final double kTurretV = 0.12;
+        public static final double kTurretCruiseVelocity = 60.0;
+        public static final double kTurretAcceleration = 120.0;
 
         // Turret tolerances
         public static final double kTurretToleranceDeg = 1.5;
@@ -80,7 +87,7 @@ public final class Constants {
         public static final double kShooterP = 0.15;
         public static final double kShooterI = 0.0;
         public static final double kShooterD = 0.0;
-        public static final double kShooterV = 0.12; // FF for VelocityVoltage
+        public static final double kShooterV = 0.12;
 
         public static final double kShooterToleranceRpm = 75.0;
 
@@ -106,6 +113,15 @@ public final class Constants {
 
         public static final double kMaxUpPercent = 1.0;
         public static final double kMaxDownPercent = 1.0;
+
+        public static final double kElevatorP = 2.0;
+        public static final double kElevatorI = 0.0;
+        public static final double kElevatorD = 0.0;
+        public static final double kElevatorS = 0.2;
+        public static final double kElevatorV = 0.12;
+        public static final double kCruiseVelocity = 40.0;
+        public static final double kAcceleration = 80.0;
+        public static final double kPositionTolerance = 2.0; // rotations
     }
 
     public static final class Hopper {

@@ -168,9 +168,9 @@ public class VisionSubsystem extends SubsystemBase {
         if (!Constants.USE_DEBUGGING)
             return;
         
-        SmartDashboard.putNumber("Time_Elapsed", DriverStation.getMatchTime());
-        SmartDashboard.putBoolean("Has_Any_Targets", getBestVisionPose() != null);
+        SmartDashboard.putNumber("Vision/Time_Elapsed", DriverStation.getMatchTime());
+        SmartDashboard.putBoolean("Vision/Has_Any_Targets", getBestVisionPose() != null);
         boolean isRedAlliance = !DriverStation.getAlliance().isEmpty() && DriverStation.getAlliance().get().equals(DriverStation.Alliance.Red);
-        SmartDashboard.putNumber("Target_Distance", TurretAimMath.solveForBasket(m_poseEstimatorConsumer.getEstimatedPosition(), isRedAlliance).distanceMeters());
+        SmartDashboard.putNumber("Vision/Target_Distance", TurretAimMath.solveForBasket(m_poseEstimatorConsumer.getEstimatedPosition(), isRedAlliance).distanceMeters());
     }
 }

@@ -16,7 +16,7 @@ import frc.robot.util.TurretAimMath;
 
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.Follower;
-import com.ctre.phoenix6.controls.PositionDutyCycle;
+import com.ctre.phoenix6.controls.MotionMagicVoltage;
 import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.MotorAlignmentValue;
@@ -28,7 +28,7 @@ public class ShooterSubsystem extends SubsystemBase {
 
     // ---------------- Turret (Kraken X60) ----------------
     private final TalonFX m_turret = new TalonFX(kTurretKrakenCanId);
-    private final PositionDutyCycle m_turretReq = new PositionDutyCycle(0);
+    private final MotionMagicVoltage m_turretReq = new MotionMagicVoltage(0);
     private double m_turretZeroDegOffset = 0.0;
     private double m_turretTargetDeg = 0.0;
 
@@ -38,8 +38,7 @@ public class ShooterSubsystem extends SubsystemBase {
     private final VelocityVoltage m_shooterVelReq = new VelocityVoltage(0);
     private double m_shooterTargetRpm = 0.0;
 
-    // ---------------- Hood (TalonSRX brushed + quadrature encoder)
-    // ----------------
+    // ---------------- Hood (TalonSRX brushed + quadrature encoder) ----------------
     private final WPI_TalonSRX m_hoodMotor = new WPI_TalonSRX(kHoodTalonSrxCanId);
     private final Encoder m_hoodEnc = new Encoder(kHoodEncDioA, kHoodEncDioB);
     private double m_hoodTargetDeg = kHoodMinDeg;
@@ -62,6 +61,11 @@ public class ShooterSubsystem extends SubsystemBase {
         cfg.Slot0.kP = kTurretP;
         cfg.Slot0.kI = kTurretI;
         cfg.Slot0.kD = kTurretD;
+        cfg.Slot0.kS = kTurretS;
+        cfg.Slot0.kV = kTurretV;
+
+        cfg.MotionMagic.MotionMagicCruiseVelocity = kTurretCruiseVelocity;
+        cfg.MotionMagic.MotionMagicAcceleration = kTurretAcceleration;
         m_turret.getConfigurator().apply(cfg);
     }
 
@@ -209,8 +213,12 @@ public class ShooterSubsystem extends SubsystemBase {
     public Command aimAtTarget(Supplier<Pose2d> getRobotPose, Supplier<Boolean> isRed) {
         return run(() -> {
             var target = TurretAimMath.solveForBasket(getRobotPose.get(), isRed.get());
+            SmartDashboard.putNumber("Hood/Target_Distance", target.distanceMeters());
             setTurretAngleDeg(target.turretYawRelativeToRobot().getDegrees());
-            setHoodForDistanceMeters(getRobotPose, isRed);
+            if (m_shooterTargetRpm > 0)
+                setHoodForDistanceMeters(getRobotPose, isRed);
+            else
+                setHoodAngleDeg(kHoodMinDeg);
         }).withName("Shooter.AimAtTarget");
     }
 
@@ -241,12 +249,12 @@ public class ShooterSubsystem extends SubsystemBase {
         if (!Constants.USE_DEBUGGING)
             return;
 
-        SmartDashboard.putBoolean("Aimed_At_Target", atTurretTarget() && atHoodTarget());
-        SmartDashboard.putNumber("Turret_Angle_Deg", getTurretAngleDeg());
-        SmartDashboard.putNumber("Turret_Target_Deg", getTurretTargetDeg());
-        SmartDashboard.putNumber("Shooter_Top_RPM", getShooterTopRpm());
-        SmartDashboard.putNumber("Shooter_Target_RPM", getShooterTargetRpm());
-        SmartDashboard.putNumber("Hood_Angle_Deg", getHoodAngleDeg());
-        SmartDashboard.putNumber("Hood_Target_Deg", getHoodTargetDeg());
+        SmartDashboard.putBoolean("Hood/Aimed_At_Target", atTurretTarget() && atHoodTarget());
+        SmartDashboard.putNumber("Hood/Turret_Angle_Deg", getTurretAngleDeg());
+        SmartDashboard.putNumber("Hood/Turret_Target_Deg", getTurretTargetDeg());
+        SmartDashboard.putNumber("Hood/Shooter_Top_RPM", getShooterTopRpm());
+        SmartDashboard.putNumber("Hood/Shooter_Target_RPM", getShooterTargetRpm());
+        SmartDashboard.putNumber("Hood/Hood_Angle_Deg", getHoodAngleDeg());
+        SmartDashboard.putNumber("Hood/Hood_Target_Deg", getHoodTargetDeg());
     }
 }

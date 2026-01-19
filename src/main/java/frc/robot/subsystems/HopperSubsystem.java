@@ -86,7 +86,7 @@ public class HopperSubsystem extends SubsystemBase {
 
         if (!Constants.USE_DEBUGGING)
             return;
-        SmartDashboard.putBoolean("Ball Sensor", hasBall());
-        SmartDashboard.putBoolean("Hopper Empty 2s", isEmptyFor2s());
+        SmartDashboard.putBoolean("Hopper/Ball Sensor", hasBall());
+        SmartDashboard.putBoolean("Hopper/Hopper Empty 2s", isEmptyFor2s());
     }
 }
