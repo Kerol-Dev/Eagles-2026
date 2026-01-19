@@ -22,6 +22,7 @@ import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import frc.robot.RobotContainer;
 
 public class PhotonVisionSimSubsystem extends edu.wpi.first.wpilibj2.command.SubsystemBase {
     private final Supplier<Pose2d> m_robotPoseSupplier;
@@ -98,6 +99,22 @@ public class PhotonVisionSimSubsystem extends edu.wpi.first.wpilibj2.command.Sub
     public void periodic() {
         Pose2d robotPose2d = m_poseEstimator.getEstimatedPosition();
         Pose3d robotPose3d = new Pose3d(robotPose2d);
+
+        double offset = SmartDashboard.getNumber("ClimbOffset", 0.0);
+        final double increment = 0.01;
+        if (RobotContainer.climed) {
+            offset = Math.min(0.5, offset + increment);
+        } else {
+            offset = Math.max(0.0, offset - increment);
+        }
+        SmartDashboard.putNumber("ClimbOffset", offset);
+
+        robotPose3d = new Pose3d(
+            robotPose3d.getX(),
+            robotPose3d.getY(),
+            robotPose3d.getZ() + offset,
+            robotPose3d.getRotation()
+        );
 
         SmartDashboard.putNumberArray("3D/RobotPose", pose3dToArray(robotPose3d));
         SmartDashboard.putNumberArray("3D/CamRight", pose3dToArray(robotPose3d.transformBy(kRobotToCamRight)));

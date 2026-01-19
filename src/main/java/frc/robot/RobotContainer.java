@@ -13,6 +13,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
 import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -23,23 +24,26 @@ import frc.robot.subsystems.HopperSubsystem;
 import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.ShooterSubsystem;
 import frc.robot.subsystems.SwerveSubsystem;
-
+import frc.robot.util.BallSim;
 import swervelib.SwerveInputStream;
 
 public class RobotContainer {
 
     private final CommandXboxController driverXbox = new CommandXboxController(0);
 
-    private final SwerveSubsystem drivebase = new SwerveSubsystem(new File(Filesystem.getDeployDirectory(), "swerve"));
+    public final SwerveSubsystem drivebase = new SwerveSubsystem(new File(Filesystem.getDeployDirectory(), "swerve"));
 
     private final ClimbSubsystem climbSubsystem = new ClimbSubsystem();
     private final HopperSubsystem hopperSubsystem = new HopperSubsystem();
     private final IntakeSubsystem intakeSubsystem = new IntakeSubsystem();
     private final ShooterSubsystem shooterSubsystem = new ShooterSubsystem();
+    public final BallSim ballSim = new BallSim();
 
     private SendableChooser<Command> autoChooser = new SendableChooser<>();
 
     private boolean m_intakeOpen = false;
+
+    public static boolean climed = false;
 
     private final SwerveInputStream driveAngularVelocity = SwerveInputStream.of(
             drivebase.getSwerveDrive(),
@@ -63,7 +67,8 @@ public class RobotContainer {
         //                 .andThen(new WaitUntilCommand(() -> hopperSubsystem.isEmptyFor2s()))
         //                 .andThen(shooterSubsystem.cmdStopShooter()).andThen(hopperSubsystem.cmdStop()));
 
-        NamedCommands.registerCommand("Shoot_All", new WaitCommand(3));
+        NamedCommands.registerCommand("Shoot_All", new InstantCommand(() -> ballSim.setShooting(true)).andThen(new WaitCommand(5)).andThen(new InstantCommand(() -> ballSim.setShooting(false))));
+        NamedCommands.registerCommand("Climb_L1_Shoot", new InstantCommand(() -> climed = !climed));
         autoChooser = AutoBuilder.buildAutoChooser();
         SmartDashboard.putData(autoChooser);
     }

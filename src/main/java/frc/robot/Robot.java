@@ -1,5 +1,7 @@
 package frc.robot;
 
+import edu.wpi.first.math.geometry.Pose3d;
+import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
@@ -27,6 +29,9 @@ public class Robot extends TimedRobot {
   @Override
   public void robotPeriodic() {
     CommandScheduler.getInstance().run();
+    Pose3d robotPose  = new Pose3d(m_robotContainer.drivebase.getPose().getX(), m_robotContainer.drivebase.getPose().getY(), RobotContainer.climed ? 1.1 : 0.6,
+        new Rotation3d(m_robotContainer.drivebase.getPose().getRotation()));
+    m_robotContainer.ballSim.update(robotPose, new Pose3d(4.632, 4.039, 2, new Rotation3d()));
   }
 
   @Override
