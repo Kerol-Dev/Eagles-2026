@@ -56,6 +56,10 @@ public class ClimbSubsystem extends SubsystemBase {
         return m_elevator.getPosition().getValueAsDouble();
     }
 
+    public boolean atPosition(double targetRotations) {
+        return Math.abs(getPositionRot() - targetRotations) < kPositionTolerance;
+    }
+
     public void setPercent(double percent) {
         m_elevator.setControl(m_duty.withOutput(MathUtil.clamp(percent, -1.0, 1.0)));
     }
@@ -71,10 +75,7 @@ public class ClimbSubsystem extends SubsystemBase {
     // --- Commands ---
 
     public Command cmdGoToPosition(double targetRotations) {
-        return run(() -> setPositionMM(targetRotations))
-                .until(() -> Math.abs(getPositionRot() - targetRotations) < kPositionTolerance)
-                .finallyDo(this::stop)
-                .withName("Climb.MMGoTo(" + targetRotations + ")");
+        return runOnce(() -> setPositionMM(targetRotations));
     }
 
     public Command cmdUp(double percent) {

@@ -7,7 +7,7 @@
         {
           "type": "path",
           "data": {
-            "pathName": "Human-Side-1"
+            "pathName": "Center-First"
           }
         },
         {
@@ -19,37 +19,13 @@
         {
           "type": "path",
           "data": {
-            "pathName": "Human-Side-2"
-          }
-        },
-        {
-          "type": "wait",
-          "data": {
-            "waitTime": 3.0
-          }
-        },
-        {
-          "type": "path",
-          "data": {
-            "pathName": "Human-Side-3"
+            "pathName": "Center-Right"
           }
         },
         {
           "type": "named",
           "data": {
             "name": "Climb_L1"
-          }
-        },
-        {
-          "type": "wait",
-          "data": {
-            "waitTime": 1.25
-          }
-        },
-        {
-          "type": "named",
-          "data": {
-            "name": "Shoot_All"
           }
         }
       ]

@@ -2,7 +2,6 @@ package frc.robot.subsystems;
 
 import static frc.robot.Constants.VisionSim.*;
 
-import java.nio.file.Path;
 import java.util.Optional;
 import java.util.function.Supplier;
 
@@ -15,10 +14,10 @@ import org.photonvision.simulation.PhotonCameraSim;
 import org.photonvision.simulation.VisionSystemSim;
 
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
+import edu.wpi.first.apriltag.AprilTagFields;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
-import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -47,14 +46,7 @@ public class PhotonVisionSimSubsystem extends edu.wpi.first.wpilibj2.command.Sub
         m_robotPoseSupplier = robotPoseSupplier;
         m_poseEstimator = poseEstimator;
 
-        try {
-            Path deploy = Filesystem.getDeployDirectory().toPath();
-            Path jsonPath = Path.of(deploy.toString(), "apriltags", "2026-rebuilt-andymark.json");
-
-            m_tagLayout = new AprilTagFieldLayout(jsonPath);
-        } catch (java.io.IOException e) {
-            throw new RuntimeException(e);
-        }
+        m_tagLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltAndymark);
 
         m_visionSim = new VisionSystemSim(kSimSystemName);
         m_visionSim.addAprilTags(m_tagLayout);
@@ -102,7 +94,7 @@ public class PhotonVisionSimSubsystem extends edu.wpi.first.wpilibj2.command.Sub
 
         double offset = SmartDashboard.getNumber("ClimbOffset", 0.0);
         final double increment = 0.01;
-        if (RobotContainer.climed) {
+        if (RobotContainer.climbed) {
             offset = Math.min(0.5, offset + increment);
         } else {
             offset = Math.max(0.0, offset - increment);
@@ -110,11 +102,10 @@ public class PhotonVisionSimSubsystem extends edu.wpi.first.wpilibj2.command.Sub
         SmartDashboard.putNumber("ClimbOffset", offset);
 
         robotPose3d = new Pose3d(
-            robotPose3d.getX(),
-            robotPose3d.getY(),
-            robotPose3d.getZ() + offset,
-            robotPose3d.getRotation()
-        );
+                robotPose3d.getX(),
+                robotPose3d.getY(),
+                robotPose3d.getZ() + offset,
+                robotPose3d.getRotation());
 
         SmartDashboard.putNumberArray("3D/RobotPose", pose3dToArray(robotPose3d));
         SmartDashboard.putNumberArray("3D/CamRight", pose3dToArray(robotPose3d.transformBy(kRobotToCamRight)));

@@ -2,11 +2,9 @@ package frc.robot.subsystems;
 
 import static frc.robot.Constants.Shooter.*;
 
-import java.util.function.Supplier;
-
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
+import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap; // Linear curve tool
 import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -37,20 +35,23 @@ public class ShooterSubsystem extends SubsystemBase {
     private final TalonFX m_shooterBottom = new TalonFX(kShooterBottomKrakenCanId);
     private final VelocityVoltage m_shooterVelReq = new VelocityVoltage(0);
     private double m_shooterTargetRpm = 0.0;
+    private boolean m_shooterEnabled = false;
 
-    // ---------------- Hood (TalonSRX brushed + quadrature encoder) ----------------
+    // ---------------- Hood (TalonSRX brushed) ----------------
     private final WPI_TalonSRX m_hoodMotor = new WPI_TalonSRX(kHoodTalonSrxCanId);
     private final Encoder m_hoodEnc = new Encoder(kHoodEncDioA, kHoodEncDioB);
     private double m_hoodTargetDeg = kHoodMinDeg;
 
+    // ---------------- Interpolation Tables (The Curves) ----------------
     private final InterpolatingDoubleTreeMap m_hoodAngleByDistance = new InterpolatingDoubleTreeMap();
+    private final InterpolatingDoubleTreeMap m_shooterRpmByDistance = new InterpolatingDoubleTreeMap();
 
     public ShooterSubsystem() {
         configureTurret();
         configureShooter();
         configureHood();
 
-        initHoodInterpolation();
+        initInterpolationTables();
         zeroTurretAtEnable();
         zeroHoodEncoderAtEnable();
     }
@@ -74,7 +75,7 @@ public class ShooterSubsystem extends SubsystemBase {
         cfg.Slot0.kP = kShooterP;
         cfg.Slot0.kI = kShooterI;
         cfg.Slot0.kD = kShooterD;
-        cfg.Slot0.kV = kShooterV;
+        cfg.Slot0.kV = kShooterV; 
         m_shooterTop.getConfigurator().apply(cfg);
         m_shooterBottom.getConfigurator().apply(cfg);
 
@@ -83,30 +84,22 @@ public class ShooterSubsystem extends SubsystemBase {
 
     private void configureHood() {
         m_hoodMotor.setNeutralMode(NeutralMode.Brake);
-
         double degPerPulse = (360.0 / kHoodEncoderPulsesPerRev) / kHoodEncoderToHoodGearRatio;
         m_hoodEnc.setDistancePerPulse(degPerPulse);
     }
 
-    private void initHoodInterpolation() {
-        // Example data points (distance in meters -> hood angle in degrees)
+    private void initInterpolationTables() {
+        // --- Hood Curve (Meters -> Degrees) ---
         m_hoodAngleByDistance.put(1.5, 18.0);
-        m_hoodAngleByDistance.put(2.0, 22.0);
-        m_hoodAngleByDistance.put(3.0, 30.0);
-        m_hoodAngleByDistance.put(4.0, 39.0);
         m_hoodAngleByDistance.put(5.0, 48.0);
+
+        // --- RPM Curve (Meters -> RPM) ---
+        m_shooterRpmByDistance.put(1.5, 3000.0); // Close shot
+        m_shooterRpmByDistance.put(3.0, 3500.0); // Mid shot
+        m_shooterRpmByDistance.put(5.0, 4200.0); // Long shot
     }
 
-    public void zeroTurretAtEnable() {
-        m_turretZeroDegOffset = getTurretAngleDegRaw();
-        m_turretTargetDeg = 0.0;
-    }
-
-    public void zeroHoodEncoderAtEnable() {
-        m_hoodEnc.reset();
-    }
-
-    // ---------------- Conversions ----------------
+    // ---------------- Turret Logic ----------------
     private static double turretDegToMotorRot(double turretDeg) {
         return (turretDeg / 360.0) * kTurretGearRatio;
     }
@@ -115,88 +108,47 @@ public class ShooterSubsystem extends SubsystemBase {
         return (motorRot / kTurretGearRatio) * 360.0;
     }
 
-    private static double rpmToRps(double rpm) {
-        return rpm / 60.0;
-    }
-
-    // ---------------- Turret state + safety ----------------
-
-    private double getTurretAngleDegRaw() {
-        return motorRotToTurretDeg(m_turret.getPosition().getValueAsDouble());
-    }
-
     public double getTurretAngleDeg() {
-        return getTurretAngleDegRaw() - m_turretZeroDegOffset;
-    }
-
-    public double getTurretTargetDeg() {
-        return m_turretTargetDeg;
-    }
-
-    public boolean atTurretTarget() {
-        return Math.abs(getTurretAngleDeg() - m_turretTargetDeg) <= kTurretToleranceDeg;
-    }
-
-    private static double clampTurretDeg(double deg) {
-        return MathUtil.clamp(deg, kTurretMinDeg, kTurretMaxDeg);
+        return motorRotToTurretDeg(m_turret.getPosition().getValueAsDouble()) - m_turretZeroDegOffset;
     }
 
     public void setTurretAngleDeg(double desiredDeg) {
-        double safe = clampTurretDeg(desiredDeg);
-        m_turretTargetDeg = safe;
-
-        double rawTargetDeg = safe + m_turretZeroDegOffset;
-        double motorRotTarget = turretDegToMotorRot(rawTargetDeg);
-
+        m_turretTargetDeg = MathUtil.clamp(desiredDeg, kTurretMinDeg, kTurretMaxDeg);
+        double motorRotTarget = turretDegToMotorRot(m_turretTargetDeg + m_turretZeroDegOffset);
         m_turret.setControl(m_turretReq.withPosition(motorRotTarget));
     }
 
-    public void nudgeTurretDeg(double deltaDeg) {
-        setTurretAngleDeg(getTurretTargetDeg() + deltaDeg);
+    // ---------------- Shooter Logic ----------------
+    public void setShooterRpm(double targetRpm) {
+        m_shooterTargetRpm = targetRpm;
+        if (m_shooterEnabled) {
+            double targetVel = targetRpm / 60.0; // RPM to RPS
+            m_shooterTop.setControl(m_shooterVelReq.withVelocity(targetVel));
+        }
     }
 
-    // ---------------- Shooter RPM ----------------
-    public void setShooterRpm(double rpm) {
-        m_shooterTargetRpm = rpm;
-        m_shooterTop.setControl(m_shooterVelReq.withVelocity(rpmToRps(rpm)));
-    }
-
-    public void stopShooter() {
-        setShooterRpm(0.0);
-    }
-
-    public double getShooterTargetRpm() {
-        return m_shooterTargetRpm;
-    }
-
-    public double getShooterTopRpm() {
-        return m_shooterTop.getVelocity().getValueAsDouble() * 60.0;
+    public void setShooterEnabled(boolean enabled) {
+        m_shooterEnabled = enabled;
+        if (!enabled) {
+            setShooterRpm(0.0);
+        }
     }
 
     public boolean atShooterSpeed() {
         return Math.abs(getShooterTopRpm() - m_shooterTargetRpm) <= kShooterToleranceRpm;
     }
 
-    // ---------------- Hood angle ----------------
+    public double getShooterTopRpm() {
+        return m_shooterTop.getVelocity().getValueAsDouble() * 60.0;
+    }
+
+    // ---------------- Hood Logic ----------------
     public double getHoodAngleDeg() {
         return m_hoodEnc.getDistance();
     }
 
-    public double getHoodTargetDeg() {
-        return m_hoodTargetDeg;
-    }
-
-    public boolean atHoodTarget() {
-        return Math.abs(getHoodAngleDeg() - m_hoodTargetDeg) <= kHoodToleranceDeg;
-    }
-
     public void setHoodAngleDeg(double desiredDeg) {
         m_hoodTargetDeg = MathUtil.clamp(desiredDeg, kHoodMinDeg, kHoodMaxDeg);
-    }
-
-    public void setHoodForDistanceMeters(Supplier<Pose2d> getRobotPose, Supplier<Boolean> isRed) {
-        setHoodAngleDeg(m_hoodAngleByDistance
-                .get(TurretAimMath.solveForBasket(getRobotPose.get(), isRed.get()).distanceMeters()));
     }
 
     private void updateHoodControl() {
@@ -205,56 +157,53 @@ public class ShooterSubsystem extends SubsystemBase {
         m_hoodMotor.set(ControlMode.PercentOutput, out);
     }
 
+    // ---------------- Aiming ----------------
+    public void aimAtTarget(Pose2d robotPose, boolean isRed) {
+        var targetInfo = TurretAimMath.solveForBasket(robotPose, isRed);
+        double distance = targetInfo.distanceMeters();
+
+        // 1. Aim Turret
+        setTurretAngleDeg(targetInfo.turretYawRelativeToRobot().getDegrees());
+
+        // 2. Set RPM from Linear Curve
+        double autoRpm = m_shooterRpmByDistance.get(distance);
+        setShooterRpm(autoRpm);
+
+        // 3. Set Hood Angle from Linear Curve
+        double autoHoodDeg = m_hoodAngleByDistance.get(distance);
+        setHoodAngleDeg(m_shooterEnabled ? autoHoodDeg : kHoodMinDeg);
+
+        SmartDashboard.putNumber("Shooter/Auto_Target_Distance", distance);
+    }
+
     // ---------------- Commands ----------------
-    public Command cmdZeroTurret() {
-        return runOnce(this::zeroTurretAtEnable).withName("Shooter.ZeroTurret");
-    }
-
-    public Command aimAtTarget(Supplier<Pose2d> getRobotPose, Supplier<Boolean> isRed) {
-        return run(() -> {
-            var target = TurretAimMath.solveForBasket(getRobotPose.get(), isRed.get());
-            SmartDashboard.putNumber("Hood/Target_Distance", target.distanceMeters());
-            setTurretAngleDeg(target.turretYawRelativeToRobot().getDegrees());
-            if (m_shooterTargetRpm > 0)
-                setHoodForDistanceMeters(getRobotPose, isRed);
-            else
-                setHoodAngleDeg(kHoodMinDeg);
-        }).withName("Shooter.AimAtTarget");
-    }
-
-    public Command cmdSetTurretDeg(double deg) {
-        return runOnce(() -> setTurretAngleDeg(deg)).withName("Shooter.SetTurretDeg(" + deg + ")");
-    }
-
-    public Command cmdNudgeTurretDeg(double deltaDeg) {
-        return runOnce(() -> nudgeTurretDeg(deltaDeg)).withName("Shooter.NudgeTurretDeg(" + deltaDeg + ")");
-    }
-
-    public Command cmdSetShooterRpm(double rpm) {
-        return runOnce(() -> setShooterRpm(rpm)).withName("Shooter.SetRPM(" + rpm + ")");
-    }
-
     public Command cmdStopShooter() {
-        return runOnce(this::stopShooter).withName("Shooter.StopShooter");
+        return runOnce(() -> setShooterRpm(0)).withName("Shooter.Stop");
     }
 
-    public Command cmdSetHoodDeg(double deg) {
-        return runOnce(() -> setHoodAngleDeg(deg)).withName("Shooter.SetHoodDeg(" + deg + ")");
+    public Command cmdEnableShooter(boolean enable) {
+        return runOnce(() -> setShooterEnabled(enable)).withName("Shooter.Enable(" + enable + ")");
+    }
+
+    public void zeroTurretAtEnable() {
+        m_turretZeroDegOffset = motorRotToTurretDeg(m_turret.getPosition().getValueAsDouble());
+    }
+
+    public void zeroHoodEncoderAtEnable() {
+        m_hoodEnc.reset();
     }
 
     @Override
     public void periodic() {
         updateHoodControl();
 
-        if (!Constants.USE_DEBUGGING)
-            return;
-
-        SmartDashboard.putBoolean("Hood/Aimed_At_Target", atTurretTarget() && atHoodTarget());
-        SmartDashboard.putNumber("Hood/Turret_Angle_Deg", getTurretAngleDeg());
-        SmartDashboard.putNumber("Hood/Turret_Target_Deg", getTurretTargetDeg());
-        SmartDashboard.putNumber("Hood/Shooter_Top_RPM", getShooterTopRpm());
-        SmartDashboard.putNumber("Hood/Shooter_Target_RPM", getShooterTargetRpm());
-        SmartDashboard.putNumber("Hood/Hood_Angle_Deg", getHoodAngleDeg());
-        SmartDashboard.putNumber("Hood/Hood_Target_Deg", getHoodTargetDeg());
+        if (Constants.USE_DEBUGGING) {
+            SmartDashboard.putNumber("Shooter/Actual_RPM", getShooterTopRpm());
+            SmartDashboard.putNumber("Shooter/Target_RPM", m_shooterTargetRpm);
+            SmartDashboard.putNumber("Shooter/Hood_Deg", getHoodAngleDeg());
+            SmartDashboard.putNumber("Shooter/Hood_Deg_Target", m_hoodTargetDeg);
+            SmartDashboard.putNumber("Shooter/Turret_Deg", getTurretAngleDeg());
+            SmartDashboard.putNumber("Shooter/Turret_Deg_Target", m_turretTargetDeg);
+        }
     }
 }

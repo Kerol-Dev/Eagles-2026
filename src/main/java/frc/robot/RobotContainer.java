@@ -14,6 +14,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
 import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -29,89 +30,124 @@ import swervelib.SwerveInputStream;
 
 public class RobotContainer {
 
-    private final CommandXboxController driverXbox = new CommandXboxController(0);
+        private final CommandXboxController driverXbox = new CommandXboxController(0);
 
-    public final SwerveSubsystem drivebase = new SwerveSubsystem(new File(Filesystem.getDeployDirectory(), "swerve"));
+        public final SwerveSubsystem drivebase = new SwerveSubsystem(
+                        new File(Filesystem.getDeployDirectory(), "swerve"));
 
-    private final ClimbSubsystem climbSubsystem = new ClimbSubsystem();
-    private final HopperSubsystem hopperSubsystem = new HopperSubsystem();
-    private final IntakeSubsystem intakeSubsystem = new IntakeSubsystem();
-    private final ShooterSubsystem shooterSubsystem = new ShooterSubsystem();
-    public final BallSim ballSim = new BallSim();
+        private final ClimbSubsystem climbSubsystem = new ClimbSubsystem();
+        private final HopperSubsystem hopperSubsystem = new HopperSubsystem();
+        private final IntakeSubsystem intakeSubsystem = new IntakeSubsystem();
+        private final ShooterSubsystem shooterSubsystem = new ShooterSubsystem();
+        public final BallSim ballSim = new BallSim();
 
-    private SendableChooser<Command> autoChooser = new SendableChooser<>();
+        private SendableChooser<Command> autoChooser = new SendableChooser<>();
 
-    private boolean m_intakeOpen = false;
+        private boolean m_intakeOpen = false;
 
-    public static boolean climed = false;
+        public static boolean climbed = false;
 
-    private final SwerveInputStream driveAngularVelocity = SwerveInputStream.of(
-            drivebase.getSwerveDrive(),
-            () -> -driverXbox.getLeftY(),
-            () -> -driverXbox.getLeftX())
-            .withControllerRotationAxis(driverXbox::getRightX)
-            .scaleRotation(-1)
-            .deadband(OperatorConstants.DEADBAND)
-            .allianceRelativeControl(true);
+        private final SwerveInputStream driveAngularVelocity = SwerveInputStream.of(
+                        drivebase.getSwerveDrive(),
+                        () -> -driverXbox.getLeftY(),
+                        () -> -driverXbox.getLeftX())
+                        .withControllerRotationAxis(driverXbox::getRightX)
+                        .scaleRotation(-1)
+                        .deadband(OperatorConstants.DEADBAND)
+                        .allianceRelativeControl(true);
 
-    public RobotContainer() {
-        configureBindings();
+        public RobotContainer() {
+                configureBindings();
 
-        DriverStation.silenceJoystickConnectionWarning(true);
+                DriverStation.silenceJoystickConnectionWarning(true);
 
-        new EventTrigger("Run_Intake").whileTrue(intakeSubsystem.cmdOpen()).onFalse(intakeSubsystem.cmdClose());
-        // NamedCommands.registerCommand("Shoot_All",
-        //         shooterSubsystem.cmdSetShooterRpm(3000)
-        //                 .andThen(new WaitUntilCommand(() -> shooterSubsystem.atShooterSpeed()))
-        //                 .andThen(hopperSubsystem.cmdPush(0.25))
-        //                 .andThen(new WaitUntilCommand(() -> hopperSubsystem.isEmptyFor2s()))
-        //                 .andThen(shooterSubsystem.cmdStopShooter()).andThen(hopperSubsystem.cmdStop()));
+                new EventTrigger("Run_Intake").onTrue(intakeSubsystem.cmdOpen())
+                        .onFalse(intakeSubsystem.cmdClose());
 
-        NamedCommands.registerCommand("Shoot_All", new InstantCommand(() -> ballSim.setShooting(true)).andThen(new WaitCommand(5)).andThen(new InstantCommand(() -> ballSim.setShooting(false))));
-        NamedCommands.registerCommand("Climb_L1_Shoot", new InstantCommand(() -> climed = !climed));
-        autoChooser = AutoBuilder.buildAutoChooser();
-        SmartDashboard.putData(autoChooser);
-    }
+                // NamedCommands.registerCommand("Shoot_All",
+                //     generateShootCommand());
+                NamedCommands.registerCommand("Shoot_All",
+                                new InstantCommand(() -> ballSim.setShooting(true)).andThen(new WaitCommand(5))
+                                                .andThen(new InstantCommand(() -> ballSim.setShooting(false))));
+                NamedCommands.registerCommand("Climb_L1",
+                                new InstantCommand(() -> climbed = !climbed));
+                NamedCommands.registerCommand("Climb_L1_Shoot",
+                                generateClimbL1Command().andThen(generateShootCommand()));
+                autoChooser = AutoBuilder.buildAutoChooser();
+                SmartDashboard.putData(autoChooser);
+        }
 
-    private void configureBindings() {
-        // Default behaviors
-        drivebase.setDefaultCommand(drivebase.driveFieldOriented(driveAngularVelocity));
-        hopperSubsystem.setDefaultCommand(hopperSubsystem.cmdIndexToSensor());
-        shooterSubsystem.setDefaultCommand(shooterSubsystem.aimAtTarget(drivebase::getPose, drivebase::isRedAlliance));
+        private void configureBindings() {
+                // Default behaviors
+                drivebase.setDefaultCommand(drivebase.driveFieldOriented(driveAngularVelocity));
+                hopperSubsystem.setDefaultCommand(hopperSubsystem.cmdIndexToSensor());
+                shooterSubsystem.setDefaultCommand(
+                                new RunCommand(() -> shooterSubsystem.aimAtTarget(drivebase.getPose(), drivebase.isRedAlliance()), shooterSubsystem));
 
-        driverXbox.start().onTrue(Commands.runOnce(drivebase::zeroGyro));
+                driverXbox.start().onTrue(Commands.runOnce(drivebase::zeroGyro));
 
-        // Shoot: spin up -> wait for speed -> feed
-        driverXbox.rightTrigger()
-                .whileTrue(
-                        shooterSubsystem.cmdSetShooterRpm(5000)
-                                .andThen(new WaitUntilCommand(shooterSubsystem::atShooterSpeed))
-                                .andThen(hopperSubsystem.cmdPush(0.25)))
-                .onFalse(shooterSubsystem.cmdStopShooter().andThen(hopperSubsystem.cmdStop()));
+                // Shoot: spin up -> wait for speed -> feed
+                driverXbox.rightTrigger()
+                                .whileTrue(
+                                                shooterSubsystem.cmdEnableShooter(true)
+                                                                .andThen(new WaitUntilCommand(
+                                                                                () -> shooterSubsystem.atShooterSpeed()))
+                                                                .andThen(hopperSubsystem.cmdPush(0.25)))
+                                .onFalse(shooterSubsystem.cmdEnableShooter(false).andThen(hopperSubsystem.cmdStop()));
+                // Intake open/close toggle (flip boolean first, then choose)
+                driverXbox.rightBumper().onTrue(
+                                Commands.runOnce(() -> m_intakeOpen = !m_intakeOpen)
+                                                .andThen(Commands.either(
+                                                                intakeSubsystem.cmdOpen(),
+                                                                intakeSubsystem.cmdClose(),
+                                                                () -> m_intakeOpen)));
 
-        // Intake open/close toggle (flip boolean first, then choose)
-        driverXbox.rightBumper().onTrue(
-                Commands.runOnce(() -> m_intakeOpen = !m_intakeOpen)
-                        .andThen(Commands.either(
-                                intakeSubsystem.cmdOpen(),
-                                intakeSubsystem.cmdClose(),
-                                () -> m_intakeOpen)));
+                // Intake rollers
+                driverXbox.leftTrigger()
+                                .whileTrue(intakeSubsystem.cmdRunRollerRpm(-3000))
+                                .onFalse(intakeSubsystem.cmdStopRoller());
 
-        // Intake rollers
-        driverXbox.leftTrigger()
-                .whileTrue(intakeSubsystem.cmdRunRollerRpm(-3000))
-                .onFalse(intakeSubsystem.cmdStopRoller());
+                // Climb
+                driverXbox.b().onTrue(generateClimbL3Command());
+                driverXbox.a().whileTrue(climbSubsystem.cmdUp(0.5)).onFalse(climbSubsystem.cmdStop());
+                driverXbox.y().whileTrue(climbSubsystem.cmdDown(0.5)).onFalse(climbSubsystem.cmdStop());
+        }
 
-        // Climb
-        driverXbox.a().whileTrue(climbSubsystem.cmdUp(0.5)).onFalse(climbSubsystem.cmdStop());
-        driverXbox.y().whileTrue(climbSubsystem.cmdDown(0.5)).onFalse(climbSubsystem.cmdStop());
-    }
+        private Command generateShootCommand() {
+                return shooterSubsystem.cmdEnableShooter(true)
+                                .andThen(new WaitUntilCommand(() -> shooterSubsystem.atShooterSpeed()))
+                                .andThen(hopperSubsystem.cmdPush(0.25))
+                                .andThen(new WaitUntilCommand(() -> hopperSubsystem.isEmptyFor2s()))
+                                .andThen(shooterSubsystem.cmdEnableShooter(false))
+                                .andThen(hopperSubsystem.cmdStop());
+        }
 
-    public Command getAutonomousCommand() {
-        return autoChooser.getSelected();
-    }
+        private Command generateClimbL1Command() {
+                return climbSubsystem.cmdGoToPosition(200)
+                                .andThen(new WaitUntilCommand(() -> climbSubsystem.atPosition(200)))
+                                .andThen(climbSubsystem.cmdGoToPosition(0))
+                                .andThen(new WaitUntilCommand(() -> climbSubsystem.atPosition(0)));
+        }
 
-    public void setMotorBrake(boolean brake) {
-        drivebase.setMotorBrake(brake);
-    }
+        private Command buildClimbSingleCycle() {
+                return climbSubsystem.cmdGoToPosition(200)
+                                .andThen(new WaitUntilCommand(() -> climbSubsystem.atPosition(200)))
+                                .andThen(climbSubsystem.cmdGoToPosition(0))
+                                .andThen(new WaitUntilCommand(() -> climbSubsystem.atPosition(0)));
+        }
+
+        private Command generateClimbL3Command() {
+                return Commands.sequence(
+                                buildClimbSingleCycle(),
+                                buildClimbSingleCycle(),
+                                buildClimbSingleCycle());
+        }
+
+        public Command getAutonomousCommand() {
+                return autoChooser.getSelected();
+        }
+
+        public void setMotorBrake(boolean brake) {
+                drivebase.setMotorBrake(brake);
+        }
 }

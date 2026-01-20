@@ -2,7 +2,9 @@ package frc.robot;
 
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.TimedRobot;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 
@@ -29,9 +31,13 @@ public class Robot extends TimedRobot {
   @Override
   public void robotPeriodic() {
     CommandScheduler.getInstance().run();
-    Pose3d robotPose  = new Pose3d(m_robotContainer.drivebase.getPose().getX(), m_robotContainer.drivebase.getPose().getY(), RobotContainer.climed ? 1.1 : 0.6,
+    Pose3d robotPose = new Pose3d(m_robotContainer.drivebase.getPose().getX(),
+        m_robotContainer.drivebase.getPose().getY(), RobotContainer.climbed ? 1.1 : 0.6,
         new Rotation3d(m_robotContainer.drivebase.getPose().getRotation()));
-    m_robotContainer.ballSim.update(robotPose, new Pose3d(4.632, 4.039, 2, new Rotation3d()));
+    Pose3d targetPose = DriverStation.getAlliance().isEmpty() && DriverStation.getAlliance().get() == Alliance.Blue
+        ? new Pose3d(4.632, 4.039, 2, new Rotation3d())
+        : new Pose3d(11.932, 4.039, 2, new Rotation3d());
+    m_robotContainer.ballSim.update(robotPose, targetPose);
   }
 
   @Override
@@ -45,7 +51,7 @@ public class Robot extends TimedRobot {
     m_autonomousCommand = m_robotContainer.getAutonomousCommand();
 
     if (m_autonomousCommand != null) {
-      m_autonomousCommand.schedule();
+      CommandScheduler.getInstance().schedule(m_autonomousCommand);
     }
   }
 
