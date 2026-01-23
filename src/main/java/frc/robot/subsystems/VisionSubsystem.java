@@ -9,6 +9,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 import frc.robot.LimelightHelpers;
+import frc.robot.RobotContainer;
 import frc.robot.util.TurretAimMath;
 
 public class VisionSubsystem extends SubsystemBase {
@@ -87,7 +88,7 @@ public class VisionSubsystem extends SubsystemBase {
 
     public void updatePoseEstimator() {
         LimelightHelpers.PoseEstimate best = chooseBestEstimate();
-        if (best == null) {
+        if (best == null || RobotContainer.passingBump) {
             return;
         }
 

@@ -23,6 +23,7 @@ import frc.robot.Constants.OperatorConstants;
 import frc.robot.subsystems.ClimbSubsystem;
 import frc.robot.subsystems.HopperSubsystem;
 import frc.robot.subsystems.IntakeSubsystem;
+import frc.robot.subsystems.LEDSubsystem;
 import frc.robot.subsystems.ShooterSubsystem;
 import frc.robot.subsystems.SwerveSubsystem;
 import frc.robot.util.BallSim;
@@ -39,6 +40,7 @@ public class RobotContainer {
         private final HopperSubsystem hopperSubsystem = new HopperSubsystem();
         private final IntakeSubsystem intakeSubsystem = new IntakeSubsystem();
         private final ShooterSubsystem shooterSubsystem = new ShooterSubsystem();
+        private final LEDSubsystem ledSubsystem = new LEDSubsystem();
         public final BallSim ballSim = new BallSim();
 
         private SendableChooser<Command> autoChooser = new SendableChooser<>();
@@ -46,6 +48,7 @@ public class RobotContainer {
         private boolean m_intakeOpen = false;
 
         public static boolean climbed = false;
+        public static boolean passingBump = false;
 
         private final SwerveInputStream driveAngularVelocity = SwerveInputStream.of(
                         drivebase.getSwerveDrive(),
@@ -62,10 +65,13 @@ public class RobotContainer {
                 DriverStation.silenceJoystickConnectionWarning(true);
 
                 new EventTrigger("Run_Intake").onTrue(intakeSubsystem.cmdOpen())
-                        .onFalse(intakeSubsystem.cmdClose());
+                                .onFalse(intakeSubsystem.cmdClose());
+
+                new EventTrigger("Bump").onTrue(new InstantCommand(() -> passingBump = true))
+                                .onFalse(new InstantCommand(() -> passingBump = false));
 
                 // NamedCommands.registerCommand("Shoot_All",
-                //     generateShootCommand());
+                // generateShootCommand());
                 NamedCommands.registerCommand("Shoot_All",
                                 new InstantCommand(() -> ballSim.setShooting(true)).andThen(new WaitCommand(5))
                                                 .andThen(new InstantCommand(() -> ballSim.setShooting(false))));
@@ -82,7 +88,14 @@ public class RobotContainer {
                 drivebase.setDefaultCommand(drivebase.driveFieldOriented(driveAngularVelocity));
                 hopperSubsystem.setDefaultCommand(hopperSubsystem.cmdIndexToSensor());
                 shooterSubsystem.setDefaultCommand(
-                                new RunCommand(() -> shooterSubsystem.aimAtTarget(drivebase.getPose(), drivebase.isRedAlliance()), shooterSubsystem));
+                                new RunCommand(() -> shooterSubsystem.aimAtTarget(drivebase.getPose(),
+                                                drivebase.isRedAlliance()), shooterSubsystem));
+                ledSubsystem.setDefaultCommand(
+                                new RunCommand(() -> ledSubsystem.updateState(
+                                                m_intakeOpen,
+                                                shooterSubsystem.lockedAtTarget(),
+                                                shooterSubsystem.atShooterSpeed()),
+                                                ledSubsystem));
 
                 driverXbox.start().onTrue(Commands.runOnce(drivebase::zeroGyro));
 
@@ -91,7 +104,8 @@ public class RobotContainer {
                                 .whileTrue(
                                                 shooterSubsystem.cmdEnableShooter(true)
                                                                 .andThen(new WaitUntilCommand(
-                                                                                () -> shooterSubsystem.atShooterSpeed()))
+                                                                                () -> shooterSubsystem
+                                                                                                .atShooterSpeed()))
                                                                 .andThen(hopperSubsystem.cmdPush(0.25)))
                                 .onFalse(shooterSubsystem.cmdEnableShooter(false).andThen(hopperSubsystem.cmdStop()));
                 // Intake open/close toggle (flip boolean first, then choose)

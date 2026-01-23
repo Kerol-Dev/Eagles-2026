@@ -4,6 +4,7 @@ import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.wpilibj.util.Color;
 
 public final class Constants {
     public static final double MAX_SPEED = Units.feetToMeters(15); // 15 ft/s
@@ -26,9 +27,9 @@ public final class Constants {
         public static final double kAngleP = 2.0;
         public static final double kAngleI = 0.0;
         public static final double kAngleD = 0.0;
-        public static final double kAngleS = 0.2;
+        public static final double kAngleS = 0.15;
         public static final double kAngleV = 0.12;
-        public static final double kAngleCruiseVelocity = 40.0;
+        public static final double kAngleCruiseVelocity = 30.0;
         public static final double kAngleAcceleration = 80.0;
         public static final double kAngleMinOut = -0.5;
         public static final double kAngleMaxOut = 0.5;
@@ -42,7 +43,7 @@ public final class Constants {
         public static final double kRollerP = 0.0002;
         public static final double kRollerI = 0.0;
         public static final double kRollerD = 0.0;
-        public static final double kRollerFF = 0.00018;
+        public static final double kRollerFF = 0.00020;
         public static final double kRollerMinOut = -1.0;
         public static final double kRollerMaxOut = 1.0;
 
@@ -74,10 +75,10 @@ public final class Constants {
         // Turret PID
         public static final double kTurretP = 2.0;
         public static final double kTurretI = 0.0;
-        public static final double kTurretD = 2.0;
-        public static final double kTurretS = 0.2;
+        public static final double kTurretD = 0.0;
+        public static final double kTurretS = 0.15;
         public static final double kTurretV = 0.12;
-        public static final double kTurretCruiseVelocity = 60.0;
+        public static final double kTurretCruiseVelocity = 40.0;
         public static final double kTurretAcceleration = 120.0;
 
         // Turret tolerances
@@ -88,6 +89,7 @@ public final class Constants {
         public static final double kShooterI = 0.0;
         public static final double kShooterD = 0.0;
         public static final double kShooterV = 0.12;
+        public static final double kShooterS = 0.20;
 
         public static final double kShooterToleranceRpm = 75.0;
 
@@ -100,7 +102,7 @@ public final class Constants {
 
         // Hood P control (percent output) + clamp
         public static final double kHoodP = 0.025;
-        public static final double kHoodMaxPercent = 0.35;
+        public static final double kHoodMaxPercent = 1.0;
         public static final double kHoodToleranceDeg = 1.0;
     }
 
@@ -152,6 +154,14 @@ public final class Constants {
         public static final double kStdDevX = 0.2;
         public static final double kStdDevY = 0.2;
         public static final double kStdDevTheta = 2.0;
+    }
 
+    public static final class LEDConstants {
+        public static final int kPort = 0;
+
+        public static final int kLength = 60;
+
+        public static final Color kTeamColorPrimary = Color.kWhite;
+        public static final Color kTeamColorSecondary = Color.kBlack;
     }
 }

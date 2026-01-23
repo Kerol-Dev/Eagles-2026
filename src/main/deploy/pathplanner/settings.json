@@ -3,9 +3,10 @@
   "robotLength": 0.9,
   "holonomicMode": true,
   "pathFolders": [
+    "Center-Side",
     "Human-Side",
     "Left-Side",
-    "Center-Side"
+    "Left-Bump"
   ],
   "autoFolders": [],
   "defaultMaxVel": 4.5,

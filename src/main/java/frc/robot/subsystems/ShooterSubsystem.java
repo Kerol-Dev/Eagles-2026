@@ -75,7 +75,10 @@ public class ShooterSubsystem extends SubsystemBase {
         cfg.Slot0.kP = kShooterP;
         cfg.Slot0.kI = kShooterI;
         cfg.Slot0.kD = kShooterD;
-        cfg.Slot0.kV = kShooterV; 
+        cfg.Slot0.kV = kShooterV;
+
+        cfg.CurrentLimits.StatorCurrentLimit = 60;
+        cfg.CurrentLimits.StatorCurrentLimitEnable = true;
         m_shooterTop.getConfigurator().apply(cfg);
         m_shooterBottom.getConfigurator().apply(cfg);
 
@@ -136,6 +139,11 @@ public class ShooterSubsystem extends SubsystemBase {
 
     public boolean atShooterSpeed() {
         return Math.abs(getShooterTopRpm() - m_shooterTargetRpm) <= kShooterToleranceRpm;
+    }
+
+    public boolean lockedAtTarget() {
+        return Math.abs(getTurretAngleDeg() - m_turretTargetDeg) <= kTurretToleranceDeg
+                && Math.abs(getHoodAngleDeg() - m_hoodTargetDeg) <= kHoodToleranceDeg;
     }
 
     public double getShooterTopRpm() {
