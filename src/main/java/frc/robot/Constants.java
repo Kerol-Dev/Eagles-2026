@@ -123,7 +123,16 @@ public final class Constants {
         public static final double kElevatorV = 0.12;
         public static final double kCruiseVelocity = 40.0;
         public static final double kAcceleration = 80.0;
-        public static final double kPositionTolerance = 2.0; // rotations
+        public static final double kElevatorPositionTolerance = 2.0; // rotations
+
+        public static final int kElevatorPushKrakenCanId = 52;
+        public static final int kElevatorPushCurrentLimit = 40; 
+        public static final double kElevatorPushP = 0.1;
+        public static final double kElevatorPushI = 0.0;
+        public static final double kElevatorPushD = 0.0;
+        public static final double kElevatorPushForwardLimit = 10.0;
+        public static final double kElevatorPushReverseLimit = 0.0;
+        public static final double kElevatorPushPositionTolerance = 2.0;
     }
 
     public static final class Hopper {

@@ -67,7 +67,7 @@ public class RobotContainer {
                 new EventTrigger("Run_Intake").onTrue(intakeSubsystem.cmdOpen())
                                 .onFalse(intakeSubsystem.cmdClose());
 
-                new EventTrigger("Bump").onTrue(new InstantCommand(() -> passingBump = true))
+                new EventTrigger("Bump").whileTrue(new InstantCommand(() -> passingBump = true))
                                 .onFalse(new InstantCommand(() -> passingBump = false));
 
                 // NamedCommands.registerCommand("Shoot_All",
@@ -137,22 +137,26 @@ public class RobotContainer {
         }
 
         private Command generateClimbL1Command() {
-                return climbSubsystem.cmdGoToPosition(200)
-                                .andThen(new WaitUntilCommand(() -> climbSubsystem.atPosition(200)))
-                                .andThen(climbSubsystem.cmdGoToPosition(0))
-                                .andThen(new WaitUntilCommand(() -> climbSubsystem.atPosition(0)));
+                return climbSubsystem.cmdPushGoToPosition(20)
+                                .andThen(new WaitUntilCommand(() -> climbSubsystem.atPushPosition(20)))
+                                .andThen(climbSubsystem.cmdGoToPosition(200))
+                                                .andThen(new WaitUntilCommand(
+                                                                () -> climbSubsystem.atElevatorPosition(200)))
+                                                .andThen(climbSubsystem.cmdGoToPosition(0))
+                                                .andThen(new WaitUntilCommand(
+                                                                () -> climbSubsystem.atElevatorPosition(0)));
         }
 
         private Command buildClimbSingleCycle() {
                 return climbSubsystem.cmdGoToPosition(200)
-                                .andThen(new WaitUntilCommand(() -> climbSubsystem.atPosition(200)))
+                                .andThen(new WaitUntilCommand(() -> climbSubsystem.atElevatorPosition(200)))
                                 .andThen(climbSubsystem.cmdGoToPosition(0))
-                                .andThen(new WaitUntilCommand(() -> climbSubsystem.atPosition(0)));
+                                .andThen(new WaitUntilCommand(() -> climbSubsystem.atElevatorPosition(0)));
         }
 
         private Command generateClimbL3Command() {
                 return Commands.sequence(
-                                buildClimbSingleCycle(),
+                                generateClimbL1Command(),
                                 buildClimbSingleCycle(),
                                 buildClimbSingleCycle());
         }

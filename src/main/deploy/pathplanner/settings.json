@@ -4,9 +4,11 @@
   "holonomicMode": true,
   "pathFolders": [
     "Center-Side",
+    "Human-Bump",
     "Human-Side",
+    "Left-Bump",
     "Left-Side",
-    "Left-Bump"
+    "Only-Human"
   ],
   "autoFolders": [],
   "defaultMaxVel": 4.5,
