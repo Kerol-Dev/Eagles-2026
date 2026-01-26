@@ -43,6 +43,7 @@ public class Robot extends TimedRobot {
   @Override
   public void disabledInit() {
     m_robotContainer.setMotorBrake(true);
+    RobotContainer.climbed = false;
   }
 
   @Override

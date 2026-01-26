@@ -13,7 +13,7 @@
         {
           "type": "named",
           "data": {
-            "name": "Shoot_All"
+            "name": "Shoot_All_Sim"
           }
         },
         {
@@ -29,7 +29,7 @@
               {
                 "type": "named",
                 "data": {
-                  "name": "Climb_L1"
+                  "name": "Climb_L1_Sim"
                 }
               },
               {

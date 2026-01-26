@@ -8,11 +8,6 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 
-import com.ctre.phoenix6.configs.TalonFXConfiguration;
-import com.ctre.phoenix6.controls.DutyCycleOut;
-import com.ctre.phoenix6.controls.MotionMagicVoltage;
-import com.ctre.phoenix6.hardware.TalonFX;
-import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.revrobotics.PersistMode;
 import com.revrobotics.ResetMode;
 import com.revrobotics.spark.ClosedLoopSlot;
@@ -22,123 +17,162 @@ import com.revrobotics.spark.SparkBase.ControlType;
 import com.revrobotics.spark.config.SparkMaxConfig;
 
 public class ClimbSubsystem extends SubsystemBase {
-    private final TalonFX m_elevator = new TalonFX(kElevatorKrakenCanId);
-    private final DutyCycleOut m_duty = new DutyCycleOut(0.0);
-    private final MotionMagicVoltage m_mmControl = new MotionMagicVoltage(0.0);
 
-    private final SparkMax m_elevator_push = new SparkMax(kElevatorPushKrakenCanId, SparkMax.MotorType.kBrushless);
-    private final SparkClosedLoopController m_elevator_push_cl = m_elevator_push.getClosedLoopController();
+    // --- Motors ---
+    // 1. Lead Screw ("Sonsuz Civata") - Moves elevator mechanism forward/backward
+    private final SparkMax m_leadScrew = new SparkMax(kLeadScrewCanId, SparkMax.MotorType.kBrushless);
+    private final SparkClosedLoopController m_leadScrewCtrl = m_leadScrew.getClosedLoopController();
+
+    // 2. Elevator Motors - Separate Left/Right control
+    private final SparkMax m_elevatorLeft = new SparkMax(kElevatorLeftCanId, SparkMax.MotorType.kBrushless);
+    private final SparkClosedLoopController m_elevatorLeftCtrl = m_elevatorLeft.getClosedLoopController();
+
+    private final SparkMax m_elevatorRight = new SparkMax(kElevatorRightCanId, SparkMax.MotorType.kBrushless);
+    private final SparkClosedLoopController m_elevatorRightCtrl = m_elevatorRight.getClosedLoopController();
 
     public ClimbSubsystem() {
         configureMotors();
-        zeroPosition();
+        zeroPositions();
     }
 
     private void configureMotors() {
-        // --- TalonFX Configuration (Main Elevator) ---
-        TalonFXConfiguration cfg = new TalonFXConfiguration();
-        cfg.SoftwareLimitSwitch
-                .withForwardSoftLimitEnable(true)
-                .withReverseSoftLimitEnable(true)
-                .withForwardSoftLimitThreshold(kMaxRot)
-                .withReverseSoftLimitThreshold(kMinRot);
-
-        cfg.Slot0.kP = kElevatorP;
-        cfg.Slot0.kI = kElevatorI;
-        cfg.Slot0.kD = kElevatorD;
-        cfg.Slot0.kS = kElevatorS;
-        cfg.Slot0.kV = kElevatorV;
-
-        cfg.MotionMagic.MotionMagicCruiseVelocity = kCruiseVelocity;
-        cfg.MotionMagic.MotionMagicAcceleration = kAcceleration;
-        cfg.MotorOutput.NeutralMode = NeutralModeValue.Brake;
-
-        m_elevator.getConfigurator().apply(cfg);
-
-        // --- SparkMax Configuration (Push Elevator) ---
-        SparkMaxConfig pushCfg = new SparkMaxConfig();
-        pushCfg.closedLoop.pid(kElevatorPushP, kElevatorPushI, kElevatorPushD, ClosedLoopSlot.kSlot0);
-        pushCfg.softLimit.forwardSoftLimitEnabled(true);
-        pushCfg.softLimit.forwardSoftLimit(kElevatorPushForwardLimit);
-        pushCfg.softLimit.reverseSoftLimitEnabled(true);
-        pushCfg.softLimit.reverseSoftLimit(kElevatorPushReverseLimit);
-        pushCfg.smartCurrentLimit(kElevatorPushCurrentLimit);
+        // --- Lead Screw Configuration (Standard PID) ---
+        SparkMaxConfig leadScrewCfg = new SparkMaxConfig();
+        leadScrewCfg.closedLoop.pid(kLeadScrewP, kLeadScrewI, kLeadScrewD, ClosedLoopSlot.kSlot0);
+        leadScrewCfg.closedLoop.outputRange(-1, 1);
         
-        m_elevator_push.configure(pushCfg, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
+        leadScrewCfg.softLimit.forwardSoftLimitEnabled(true);
+        leadScrewCfg.softLimit.forwardSoftLimit(kLeadScrewForwardLimit);
+        leadScrewCfg.softLimit.reverseSoftLimitEnabled(true);
+        leadScrewCfg.softLimit.reverseSoftLimit(kLeadScrewReverseLimit);
+        leadScrewCfg.smartCurrentLimit(kLeadScrewCurrentLimit);
+
+        m_leadScrew.configure(leadScrewCfg, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
+
+        // --- Elevator Configuration (MAXMotion / Smooth Position) ---
+        SparkMaxConfig elevatorCfg = new SparkMaxConfig();
+        
+        // PID + Motion Profiling Parameters
+        elevatorCfg.closedLoop.pid(kElevatorP, kElevatorI, kElevatorD, ClosedLoopSlot.kSlot0);
+        elevatorCfg.closedLoop.maxMotion.cruiseVelocity(kElevatorMaxVel);
+        elevatorCfg.closedLoop.maxMotion.maxAcceleration(kElevatorMaxAccel);
+        elevatorCfg.closedLoop.maxMotion.allowedProfileError(kElevatorTolerance);
+        elevatorCfg.closedLoop.outputRange(-1, 1);
+
+        // Limits
+        elevatorCfg.softLimit.forwardSoftLimitEnabled(true);
+        elevatorCfg.softLimit.forwardSoftLimit(kElevatorForwardLimit);
+        elevatorCfg.softLimit.reverseSoftLimitEnabled(true);
+        elevatorCfg.softLimit.reverseSoftLimit(kElevatorReverseLimit);
+        elevatorCfg.smartCurrentLimit(kElevatorCurrentLimit);
+
+        // Apply config to both elevators
+        m_elevatorLeft.configure(elevatorCfg, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
+        m_elevatorRight.configure(elevatorCfg, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
     }
 
-    public void zeroPosition() {
-        m_elevator.setPosition(0.0);
-        m_elevator_push.getEncoder().setPosition(0.0);
+    public void zeroPositions() {
+        m_leadScrew.getEncoder().setPosition(0.0);
+        m_elevatorLeft.getEncoder().setPosition(0.0);
+        m_elevatorRight.getEncoder().setPosition(0.0);
     }
 
-    // --- Main Elevator Methods ---
-    public double getElevatorPositionRot() {
-        return m_elevator.getPosition().getValueAsDouble();
+    // --- Lead Screw Methods ---
+    
+    public double getLeadScrewPos() {
+        return m_leadScrew.getEncoder().getPosition();
     }
 
-    public boolean atElevatorPosition(double targetRotations) {
-        return Math.abs(getElevatorPositionRot() - targetRotations) < kElevatorPositionTolerance;
+    public boolean atLeadScrewPos(double target) {
+        return Math.abs(getLeadScrewPos() - target) < kLeadScrewTolerance;
+    }
+
+    public void setLeadScrewPosition(double targetRot) {
+        m_leadScrewCtrl.setSetpoint(targetRot, ControlType.kPosition, ClosedLoopSlot.kSlot0);
+    }
+
+    public void setLeadScrewPercent(double percent) {
+        m_leadScrew.set(MathUtil.clamp(percent, -1.0, 1.0));
+    }
+
+    // --- Elevator Methods ---
+
+    public double getLeftElevatorPos() {
+        return m_elevatorLeft.getEncoder().getPosition();
+    }
+
+    public double getRightElevatorPos() {
+        return m_elevatorRight.getEncoder().getPosition();
+    }
+
+    public boolean atLeftElevatorPos(double target) {
+        return Math.abs(getLeftElevatorPos() - target) < kElevatorTolerance;
+    }
+
+    public boolean atRightElevatorPos(double target) {
+        return Math.abs(getRightElevatorPos() - target) < kElevatorTolerance;
+    }
+
+    public void setLeftElevatorPosition(double targetRot) {
+        m_elevatorLeftCtrl.setSetpoint(targetRot, ControlType.kMAXMotionPositionControl, ClosedLoopSlot.kSlot0);
+    }
+
+    public void setRightElevatorPosition(double targetRot) {
+        m_elevatorRightCtrl.setSetpoint(targetRot, ControlType.kMAXMotionPositionControl, ClosedLoopSlot.kSlot0);
     }
 
     public void setElevatorPercent(double percent) {
-        m_elevator.setControl(m_duty.withOutput(MathUtil.clamp(percent, -1.0, 1.0)));
-    }
-
-    public void setElevatorPositionMM(double targetRotations) {
-        m_elevator.setControl(m_mmControl.withPosition(targetRotations));
-    }
-
-    // --- Push Motor Methods ---
-    public double getPushPositionRot() {
-        return m_elevator_push.getEncoder().getPosition();
-    }
-
-    public boolean atPushPosition(double targetRotations) {
-        return Math.abs(getPushPositionRot() - targetRotations) < kElevatorPushPositionTolerance;
-    }
-
-    public void setPushPercent(double percent) {
-        m_elevator_push.set(MathUtil.clamp(percent, -1.0, 1.0));
-    }
-
-    public void setPushPosition(double targetRotations) {
-        m_elevator_push_cl.setSetpoint(targetRotations, ControlType.kPosition, ClosedLoopSlot.kSlot0);
+        double clamped = MathUtil.clamp(percent, -1.0, 1.0);
+        m_elevatorLeft.set(clamped);
+        m_elevatorRight.set(clamped);
     }
 
     public void stop() {
-        setElevatorPercent(0.0);
-        setPushPercent(0.0);
+        m_leadScrew.stopMotor();
+        m_elevatorLeft.stopMotor();
+        m_elevatorRight.stopMotor();
     }
 
     // --- Commands ---
 
-    // Main Elevator Commands
-    public Command cmdGoToPosition(double targetRotations) {
-        return run(() -> setElevatorPositionMM(targetRotations))
-                .until(() -> atElevatorPosition(targetRotations))
-                .withName("Climb.GoToPosition");
+    // Lead Screw Commands
+    public Command cmdLeadScrewToPos(double targetRot) {
+        return run(() -> setLeadScrewPosition(targetRot))
+                .until(() -> atLeadScrewPos(targetRot))
+                .withName("Climb.LeadScrewToPos");
     }
 
-    public Command cmdUp(double percent) {
-        final double out = Math.abs(percent) * kMaxUpPercent;
-        return runEnd(() -> setElevatorPercent(out), () -> setElevatorPercent(0.0)).withName("Climb.Up");
+    public Command cmdLeadScrewManual(double percent) {
+        return runEnd(() -> setLeadScrewPercent(percent), () -> setLeadScrewPercent(0.0))
+                .withName("Climb.LeadScrewManual");
     }
 
-    public Command cmdDown(double percent) {
-        final double out = -Math.abs(percent) * kMaxDownPercent;
-        return runEnd(() -> setElevatorPercent(out), () -> setElevatorPercent(0.0)).withName("Climb.Down");
+    // Elevator Commands (Separate Control)
+    public Command cmdLeftElevatorToPos(double targetRot) {
+        return run(() -> setLeftElevatorPosition(targetRot))
+                .until(() -> atLeftElevatorPos(targetRot))
+                .withName("Climb.LeftElevToPos");
     }
 
-    // Push Motor Commands
-    public Command cmdPushGoToPosition(double targetRotations) {
-        return run(() -> setPushPosition(targetRotations))
-                .until(() -> atPushPosition(targetRotations))
-                .withName("Climb.PushGoToPos");
+    public Command cmdRightElevatorToPos(double targetRot) {
+        return run(() -> setRightElevatorPosition(targetRot))
+                .until(() -> atRightElevatorPos(targetRot))
+                .withName("Climb.RightElevToPos");
     }
 
-    public Command cmdPushSetPercent(double percent) {
-        return runEnd(() -> setPushPercent(percent), () -> setPushPercent(0.0)).withName("Climb.PushManual");
+    // Moves both elevators to the same setpoint simultaneously
+    public Command cmdBothElevatorsToPos(double targetRot) {
+        return run(() -> {
+            setLeftElevatorPosition(targetRot);
+            setRightElevatorPosition(targetRot);
+        })
+        .until(() -> atLeftElevatorPos(targetRot) && atRightElevatorPos(targetRot))
+        .withName("Climb.BothElevToPos");
+    }
+
+    public Command cmdElevatorsManual(double percent) {
+        return runEnd(() -> setElevatorPercent(percent), () -> setElevatorPercent(0.0))
+                .withName("Climb.ElevManual");
     }
 
     public Command cmdStop() {
@@ -147,9 +181,9 @@ public class ClimbSubsystem extends SubsystemBase {
 
     @Override
     public void periodic() {
-        if (!Constants.USE_DEBUGGING)
-            return;
-        SmartDashboard.putNumber("Climb/Elevator/Pos_Rot", getElevatorPositionRot());
-        SmartDashboard.putNumber("Climb/Push/Pos_Rot", getPushPositionRot());
+        if (!Constants.USE_DEBUGGING) return;
+        SmartDashboard.putNumber("Climb/LeadScrew/Pos", getLeadScrewPos());
+        SmartDashboard.putNumber("Climb/ElevLeft/Pos", getLeftElevatorPos());
+        SmartDashboard.putNumber("Climb/ElevRight/Pos", getRightElevatorPos());
     }
 }

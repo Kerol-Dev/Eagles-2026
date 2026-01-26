@@ -47,6 +47,7 @@ public class RobotContainer {
 
         private boolean m_intakeOpen = false;
 
+        // For Sim
         public static boolean climbed = false;
         public static boolean passingBump = false;
 
@@ -70,15 +71,16 @@ public class RobotContainer {
                 new EventTrigger("Bump").whileTrue(new InstantCommand(() -> passingBump = true))
                                 .onFalse(new InstantCommand(() -> passingBump = false));
 
-                // NamedCommands.registerCommand("Shoot_All",
-                // generateShootCommand());
                 NamedCommands.registerCommand("Shoot_All",
+                                generateShootCommand());
+                NamedCommands.registerCommand("Shoot_All_Sim",
                                 new InstantCommand(() -> ballSim.setShooting(true)).andThen(new WaitCommand(5))
                                                 .andThen(new InstantCommand(() -> ballSim.setShooting(false))));
-                NamedCommands.registerCommand("Climb_L1",
+                NamedCommands.registerCommand("Climb_L1_Sim",
                                 new InstantCommand(() -> climbed = !climbed));
-                NamedCommands.registerCommand("Climb_L1_Shoot",
-                                generateClimbL1Command().andThen(generateShootCommand()));
+                NamedCommands.registerCommand("Climb_L1",
+                                generateClimbL1Command());
+
                 autoChooser = AutoBuilder.buildAutoChooser();
                 SmartDashboard.putData(autoChooser);
         }
@@ -122,9 +124,9 @@ public class RobotContainer {
                                 .onFalse(intakeSubsystem.cmdStopRoller());
 
                 // Climb
-                driverXbox.b().onTrue(generateClimbL3Command());
-                driverXbox.a().whileTrue(climbSubsystem.cmdUp(0.5)).onFalse(climbSubsystem.cmdStop());
-                driverXbox.y().whileTrue(climbSubsystem.cmdDown(0.5)).onFalse(climbSubsystem.cmdStop());
+                driverXbox.b().onTrue(fullClimbSequence()).whileFalse(climbSubsystem.cmdStop());
+                driverXbox.y().onTrue(
+                                climbSubsystem.cmdLeadScrewToPos(0).andThen(climbSubsystem.cmdBothElevatorsToPos(0)));
         }
 
         private Command generateShootCommand() {
@@ -137,28 +139,24 @@ public class RobotContainer {
         }
 
         private Command generateClimbL1Command() {
-                return climbSubsystem.cmdPushGoToPosition(20)
-                                .andThen(new WaitUntilCommand(() -> climbSubsystem.atPushPosition(20)))
-                                .andThen(climbSubsystem.cmdGoToPosition(200))
-                                                .andThen(new WaitUntilCommand(
-                                                                () -> climbSubsystem.atElevatorPosition(200)))
-                                                .andThen(climbSubsystem.cmdGoToPosition(0))
-                                                .andThen(new WaitUntilCommand(
-                                                                () -> climbSubsystem.atElevatorPosition(0)));
+                return climbSubsystem.cmdLeadScrewToPos(100).andThen(climbSubsystem.cmdBothElevatorsToPos(200))
+                                .andThen(climbSubsystem.cmdBothElevatorsToPos(0));
         }
 
-        private Command buildClimbSingleCycle() {
-                return climbSubsystem.cmdGoToPosition(200)
-                                .andThen(new WaitUntilCommand(() -> climbSubsystem.atElevatorPosition(200)))
-                                .andThen(climbSubsystem.cmdGoToPosition(0))
-                                .andThen(new WaitUntilCommand(() -> climbSubsystem.atElevatorPosition(0)));
+        private Command generateClimbL2Command() {
+                return climbSubsystem.cmdRightElevatorToPos(200)
+                                .andThen(climbSubsystem.cmdRightElevatorToPos(0));
         }
 
         private Command generateClimbL3Command() {
-                return Commands.sequence(
-                                generateClimbL1Command(),
-                                buildClimbSingleCycle(),
-                                buildClimbSingleCycle());
+                return climbSubsystem.cmdLeftElevatorToPos(200)
+                                .andThen(climbSubsystem.cmdLeftElevatorToPos(0));
+        }
+
+        private Command fullClimbSequence() {
+                return generateClimbL1Command()
+                                .andThen(generateClimbL2Command())
+                                .andThen(generateClimbL3Command());
         }
 
         public Command getAutonomousCommand() {

@@ -107,32 +107,36 @@ public final class Constants {
     }
 
     public static final class Climb {
-        public static final int kElevatorKrakenCanId = 51;
+        // --- CAN IDs ---
+        public static final int kLeadScrewCanId = 31;
+        public static final int kElevatorLeftCanId = 69;
+        public static final int kElevatorRightCanId = 125;
 
-        // Soft limits in MOTOR ROTATIONS
-        public static final double kMinRot = 0.0;
-        public static final double kMaxRot = 120.0;
+        // --- Lead Screw Configuration ---
+        public static final double kLeadScrewP = 0.1; 
+        public static final double kLeadScrewI = 0.0;
+        public static final double kLeadScrewD = 0.0;
+        
+        // Limits & Tolerances
+        public static final double kLeadScrewForwardLimit = 50.0; 
+        public static final double kLeadScrewReverseLimit = 0.0;
+        public static final int kLeadScrewCurrentLimit = 40;
+        public static final double kLeadScrewTolerance = 0.5;
 
-        public static final double kMaxUpPercent = 1.0;
-        public static final double kMaxDownPercent = 1.0;
-
-        public static final double kElevatorP = 2.0;
+        // --- Elevator Configuration (Left & Right) ---
+        public static final double kElevatorP = 0.05;
         public static final double kElevatorI = 0.0;
         public static final double kElevatorD = 0.0;
-        public static final double kElevatorS = 0.2;
-        public static final double kElevatorV = 0.12;
-        public static final double kCruiseVelocity = 40.0;
-        public static final double kAcceleration = 80.0;
-        public static final double kElevatorPositionTolerance = 2.0; // rotations
 
-        public static final int kElevatorPushKrakenCanId = 52;
-        public static final int kElevatorPushCurrentLimit = 40; 
-        public static final double kElevatorPushP = 0.1;
-        public static final double kElevatorPushI = 0.0;
-        public static final double kElevatorPushD = 0.0;
-        public static final double kElevatorPushForwardLimit = 10.0;
-        public static final double kElevatorPushReverseLimit = 0.0;
-        public static final double kElevatorPushPositionTolerance = 2.0;
+        // MAXMotion Profiling Constraints
+        public static final double kElevatorMaxVel = 4500.0;
+        public static final double kElevatorMaxAccel = 3500.0;
+
+        // Limits & Tolerances
+        public static final double kElevatorForwardLimit = 80.0;
+        public static final double kElevatorReverseLimit = 0.0;
+        public static final int kElevatorCurrentLimit = 60;
+        public static final double kElevatorTolerance = 1.0;
     }
 
     public static final class Hopper {
