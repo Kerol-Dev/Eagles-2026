@@ -126,7 +126,7 @@ public class RobotContainer {
                 // Climb
                 driverXbox.b().onTrue(fullClimbSequence()).whileFalse(climbSubsystem.cmdStop());
                 driverXbox.y().onTrue(
-                                climbSubsystem.cmdLeadScrewToPos(0).andThen(climbSubsystem.cmdBothElevatorsToPos(0)));
+                                climbSubsystem.cmdLeadScrewToPos(0).andThen(climbSubsystem.cmdElevatorToPos(0)));
         }
 
         private Command generateShootCommand() {
@@ -139,24 +139,18 @@ public class RobotContainer {
         }
 
         private Command generateClimbL1Command() {
-                return climbSubsystem.cmdLeadScrewToPos(100).andThen(climbSubsystem.cmdBothElevatorsToPos(200))
-                                .andThen(climbSubsystem.cmdBothElevatorsToPos(0));
+                return climbSubsystem.cmdLeadScrewToPos(100).andThen(climbSubsystem.cmdElevatorToPos(200))
+                                .andThen(climbSubsystem.cmdElevatorToPos(0));
         }
 
-        private Command generateClimbL2Command() {
-                return climbSubsystem.cmdRightElevatorToPos(200)
-                                .andThen(climbSubsystem.cmdRightElevatorToPos(0));
-        }
-
-        private Command generateClimbL3Command() {
-                return climbSubsystem.cmdLeftElevatorToPos(200)
-                                .andThen(climbSubsystem.cmdLeftElevatorToPos(0));
+        private Command generateClimbL23Command() {
+                return climbSubsystem.cmdElevatorToPos(200).andThen(climbSubsystem.cmdElevatorToPos(0));
         }
 
         private Command fullClimbSequence() {
                 return generateClimbL1Command()
-                                .andThen(generateClimbL2Command())
-                                .andThen(generateClimbL3Command());
+                                .andThen(generateClimbL23Command())
+                                .andThen(generateClimbL23Command());
         }
 
         public Command getAutonomousCommand() {

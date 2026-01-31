@@ -140,7 +140,9 @@ public final class Constants {
     }
 
     public static final class Hopper {
-        public static final int kMotorCanId = 61;
+        public static final int kLeftMotorCanId = 61;
+        public static final int kRightMotorCanId = 62;
+        public static final int kMiddleMotorCanId = 63;
         public static final int kBallSensorDio = 2;
 
         public static final double kIndexPercent = 0.25;
