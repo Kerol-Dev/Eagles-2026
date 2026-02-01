@@ -26,6 +26,7 @@ import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.LEDSubsystem;
 import frc.robot.subsystems.ShooterSubsystem;
 import frc.robot.subsystems.SwerveSubsystem;
+import frc.robot.subsystems.TurretSubsystem;
 import frc.robot.util.BallSim;
 import swervelib.SwerveInputStream;
 
@@ -40,6 +41,7 @@ public class RobotContainer {
         private final HopperSubsystem hopperSubsystem = new HopperSubsystem();
         private final IntakeSubsystem intakeSubsystem = new IntakeSubsystem();
         private final ShooterSubsystem shooterSubsystem = new ShooterSubsystem();
+        private final TurretSubsystem turretSubsystem = new TurretSubsystem();
         private final LEDSubsystem ledSubsystem = new LEDSubsystem();
         public final BallSim ballSim = new BallSim();
 
@@ -90,14 +92,17 @@ public class RobotContainer {
                 drivebase.setDefaultCommand(drivebase.driveFieldOriented(driveAngularVelocity));
                 hopperSubsystem.setDefaultCommand(hopperSubsystem.cmdIndexToSensor());
                 shooterSubsystem.setDefaultCommand(
-                                new RunCommand(() -> shooterSubsystem.aimAtTarget(drivebase.getPose(),
+                                new RunCommand(() -> shooterSubsystem.setAutoRPM(drivebase.getPose(),
                                                 drivebase.isRedAlliance()), shooterSubsystem));
                 ledSubsystem.setDefaultCommand(
                                 new RunCommand(() -> ledSubsystem.updateState(
                                                 m_intakeOpen,
-                                                shooterSubsystem.lockedAtTarget(),
+                                                turretSubsystem.lockedAtTarget(),
                                                 shooterSubsystem.atShooterSpeed()),
                                                 ledSubsystem));
+                turretSubsystem.setDefaultCommand(
+                                new RunCommand(() -> turretSubsystem.aimAtTarget(drivebase.getPose(),
+                                                drivebase.isRedAlliance()), turretSubsystem));
 
                 driverXbox.start().onTrue(Commands.runOnce(drivebase::zeroGyro));
 
