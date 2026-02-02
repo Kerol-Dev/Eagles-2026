@@ -81,8 +81,7 @@ public class PhotonVisionSimSubsystem extends edu.wpi.first.wpilibj2.command.Sub
         return est;
     }
 
-    @Override
-    public void simulationPeriodic() {
+    public void update() {
         Pose2d robotPose = m_robotPoseSupplier.get();
         m_visionSim.update(robotPose);
     }

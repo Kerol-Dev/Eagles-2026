@@ -113,7 +113,7 @@ public class RobotContainer {
                                                                 .andThen(new WaitUntilCommand(
                                                                                 () -> shooterSubsystem
                                                                                                 .atShooterSpeed()))
-                                                                .andThen(hopperSubsystem.cmdPush(0.25)))
+                                                                .andThen(hopperSubsystem.cmdPush(0.5)))
                                 .onFalse(shooterSubsystem.cmdEnableShooter(false).andThen(hopperSubsystem.cmdStop()));
                 // Intake open/close toggle (flip boolean first, then choose)
                 driverXbox.rightBumper().onTrue(
@@ -137,7 +137,7 @@ public class RobotContainer {
         private Command generateShootCommand() {
                 return shooterSubsystem.cmdEnableShooter(true)
                                 .andThen(new WaitUntilCommand(() -> shooterSubsystem.atShooterSpeed()))
-                                .andThen(hopperSubsystem.cmdPush(0.25))
+                                .andThen(hopperSubsystem.cmdPush(0.5))
                                 .andThen(new WaitUntilCommand(() -> hopperSubsystem.isEmptyFor2s()))
                                 .andThen(shooterSubsystem.cmdEnableShooter(false))
                                 .andThen(hopperSubsystem.cmdStop());

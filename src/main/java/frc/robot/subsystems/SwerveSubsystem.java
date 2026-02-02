@@ -128,7 +128,7 @@ public class SwerveSubsystem extends SubsystemBase {
                     swerveDrive.getFieldVelocity().omegaRadiansPerSecond);
             visionSubsystem.updatePoseEstimator();
         } else {
-            photonVisionSimSubsystem.simulationPeriodic();
+            photonVisionSimSubsystem.update();
         }
         m_field.setRobotPose(getPose());
     }
