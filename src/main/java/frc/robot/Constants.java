@@ -140,13 +140,11 @@ public final class Constants {
     }
 
     public static final class Hopper {
-        public static final int kLeftMotorCanId = 61;
-        public static final int kRightMotorCanId = 62;
-        public static final int kMiddleMotorCanId = 63;
+        public static final int kIndexerMotorCanId = 61;
         public static final int kBallSensorDio = 2;
 
-        public static final double kIndexPercent = 0.25;
-        public static final double kReversePercent = -0.25;
+        public static final double kIndexPercent = 0.5;
+        public static final double kReversePercent = -0.5;
 
         public static final boolean kSensorInverted = true;
     }
@@ -165,7 +163,6 @@ public final class Constants {
         public static final Transform3d kRobotToCamBack = new Transform3d(new Translation3d(-0.25, 0.0, 0.5),
                 new Rotation3d(0, 0, Math.toRadians(180)));
 
-        // Basic trust (tune later)
         public static final double kStdDevX = 0.2;
         public static final double kStdDevY = 0.2;
         public static final double kStdDevTheta = 2.0;

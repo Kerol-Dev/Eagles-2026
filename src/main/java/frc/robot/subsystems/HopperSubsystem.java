@@ -14,9 +14,7 @@ import com.revrobotics.spark.SparkMax;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 
 public class HopperSubsystem extends SubsystemBase {
-    private final SparkMax m_left_motor = new SparkMax(kLeftMotorCanId, MotorType.kBrushless);
-    private final SparkMax m_right_motor = new SparkMax(kRightMotorCanId, MotorType.kBrushless);
-    private final SparkMax m_middle_motor = new SparkMax(kMiddleMotorCanId, MotorType.kBrushless);
+    private final SparkMax m_indexer_motor = new SparkMax(kIndexerMotorCanId, MotorType.kBrushless);
     private final DigitalInput m_ballSensor = new DigitalInput(kBallSensorDio);
 
     private final Timer m_emptyTimer = new Timer();
@@ -31,9 +29,7 @@ public class HopperSubsystem extends SubsystemBase {
     }
 
     public void setPercent(double percent) {
-        m_left_motor.set(clamp(percent));
-        m_right_motor.set(clamp(percent));
-        m_middle_motor.set(clamp(percent));
+        m_indexer_motor.set(clamp(percent));
     }
 
     public void stop() {
