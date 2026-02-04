@@ -1,5 +1,7 @@
 package frc.robot;
 
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation3d;
@@ -7,11 +9,18 @@ import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.util.Color;
 
 public final class Constants {
-    public static final double MAX_SPEED = Units.feetToMeters(15); // 15 ft/s
+    public static final double MAX_SPEED = Units.feetToMeters(18.42); // ft/s
     public static final boolean USE_DEBUGGING = true;
 
     public static class OperatorConstants {
         public static final double DEADBAND = 0.1;
+    }
+
+    public static final class FieldConstants {
+        public static final Pose2d kHubPoseRed = new Pose2d(10, 10, new Rotation2d());
+        public static final Pose2d kHubPoseBlue = new Pose2d(16.54, 10, new Rotation2d());
+        public static final Pose2d kClimbPoseRed = new Pose2d(10, 10, new Rotation2d());
+        public static final Pose2d kClimbPoseBlue = new Pose2d(16.54, 10, new Rotation2d());
     }
 
     public static final class Intake {
@@ -80,6 +89,7 @@ public final class Constants {
         public static final double kTurretV = 0.12;
         public static final double kTurretCruiseVelocity = 40.0;
         public static final double kTurretAcceleration = 120.0;
+        public static final int kTurretCurrentLimitA = 60;
 
         // Turret tolerances
         public static final double kTurretToleranceDeg = 1.5;
@@ -92,6 +102,7 @@ public final class Constants {
         public static final double kShooterS = 0.20;
 
         public static final double kShooterToleranceRpm = 75.0;
+        public static final int kShooterCurrentLimitA = 60;
 
         // ---------------- Hood ----------------
         public static final double kHoodEncoderPulsesPerRev = 7.0;

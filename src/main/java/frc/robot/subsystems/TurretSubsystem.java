@@ -4,16 +4,20 @@ import static frc.robot.Constants.Shooter.*;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap; // Linear curve tool
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
-import frc.robot.util.TurretAimMath;
+import frc.robot.Constants.FieldConstants;
+import frc.robot.util.SimpleTurretAim;
 
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.MotionMagicVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
@@ -56,6 +60,10 @@ public class TurretSubsystem extends SubsystemBase {
 
         cfg.MotionMagic.MotionMagicCruiseVelocity = kTurretCruiseVelocity;
         cfg.MotionMagic.MotionMagicAcceleration = kTurretAcceleration;
+        cfg.CurrentLimits.SupplyCurrentLimit = kTurretCurrentLimitA;
+        cfg.CurrentLimits.SupplyCurrentLimitEnable = true;
+        cfg.MotorOutput.NeutralMode = NeutralModeValue.Brake;
+
         m_turret.getConfigurator().apply(cfg);
     }
 
@@ -89,10 +97,10 @@ public class TurretSubsystem extends SubsystemBase {
         return motorRotToTurretDeg(m_turret.getPosition().getValueAsDouble()) - m_turretZeroDegOffset;
     }
 
-    public void setTurretAngleDeg(double desiredDeg) {
+    public void setTurretAngleDeg(double desiredDeg, double feedforwardVel) {
         m_turretTargetDeg = MathUtil.clamp(desiredDeg, kTurretMinDeg, kTurretMaxDeg);
         double motorRotTarget = turretDegToMotorRot(m_turretTargetDeg + m_turretZeroDegOffset);
-        m_turret.setControl(m_turretReq.withPosition(motorRotTarget));
+        m_turret.setControl(m_turretReq.withPosition(motorRotTarget).withFeedForward(feedforwardVel));
     }
 
     public boolean lockedAtTarget() {
@@ -116,14 +124,12 @@ public class TurretSubsystem extends SubsystemBase {
     }
 
     // ---------------- Aiming ----------------
-    public void aimAtTarget(Pose2d robotPose, boolean isRed) {
-        var targetInfo = TurretAimMath.solveForBasket(robotPose, isRed);
-        double distance = targetInfo.distanceMeters();
+    public void aimAtTarget(Pose2d robotPose, boolean isRed, ChassisSpeeds robotVSpeeds) {
+        Translation2d target = isRed ? FieldConstants.kHubPoseRed.getTranslation() : FieldConstants.kHubPoseBlue.getTranslation();
+        var targetInfo = SimpleTurretAim.solve(robotPose, target, robotVSpeeds, 0.0, 0.0);
+        double distance = targetInfo.distance();
 
-        // 1. Aim Turret
-        setTurretAngleDeg(targetInfo.turretYawRelativeToRobot().getDegrees());
-
-        // 3. Set Hood Angle from Linear Curve
+        setTurretAngleDeg(targetInfo.turretYaw().getDegrees(), targetInfo.turretFF());
         double autoHoodDeg = m_hoodAngleByDistance.get(distance);
         setHoodAngleDeg(m_shooterEnabled ? autoHoodDeg : kHoodMinDeg);
 

@@ -173,6 +173,18 @@ public class SwerveSubsystem extends SubsystemBase {
                     swerveDrive.getMaximumChassisVelocity()));
         });
     }
+    
+    public Command pathFindToPose(Supplier<Pose2d> pose) {
+        PathConstraints constraints = new PathConstraints(
+                swerveDrive.getMaximumChassisVelocity(), 4.0,
+                swerveDrive.getMaximumChassisAngularVelocity(), Units.degreesToRadians(720));
+
+        return AutoBuilder.pathfindToPose(
+                pose.get(),
+                constraints,
+                edu.wpi.first.units.Units.MetersPerSecond.of(0) // Goal end velocity in meters/sec
+        );
+    }
 
     public void drive(Translation2d translation, double rotation, boolean fieldRelative) {
         swerveDrive.drive(translation,

@@ -5,6 +5,7 @@ import static frc.robot.Constants.Intake.*;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
 import frc.robot.Constants;
 
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
@@ -119,6 +120,7 @@ public class IntakeSubsystem extends SubsystemBase {
 
     public Command cmdOpen() {
         return runOnce(() -> setAngleTargetDeg(kOpenAngleDeg))
+                .andThen(new WaitUntilCommand(() -> atAngleTarget()))
                 .andThen(cmdRunRollerRpm(3000))
                 .withName("Intake.Open");
     }
@@ -126,6 +128,7 @@ public class IntakeSubsystem extends SubsystemBase {
     public Command cmdClose() {
         return runOnce(() -> setAngleTargetDeg(kClosedAngleDeg))
                 .andThen(cmdStopRoller())
+                .andThen(new WaitUntilCommand(() -> atAngleTarget()))
                 .withName("Intake.Close");
     }
 

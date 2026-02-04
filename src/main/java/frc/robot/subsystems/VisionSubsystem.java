@@ -10,7 +10,6 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 import frc.robot.LimelightHelpers;
 import frc.robot.RobotContainer;
-import frc.robot.util.TurretAimMath;
 
 public class VisionSubsystem extends SubsystemBase {
 
@@ -171,7 +170,5 @@ public class VisionSubsystem extends SubsystemBase {
         
         SmartDashboard.putNumber("Vision/Time_Elapsed", DriverStation.getMatchTime());
         SmartDashboard.putBoolean("Vision/Has_Any_Targets", getBestVisionPose() != null);
-        boolean isRedAlliance = !DriverStation.getAlliance().isEmpty() && DriverStation.getAlliance().get().equals(DriverStation.Alliance.Red);
-        SmartDashboard.putNumber("Vision/Target_Distance", TurretAimMath.solveForBasket(m_poseEstimatorConsumer.getEstimatedPosition(), isRedAlliance).distanceMeters());
     }
 }

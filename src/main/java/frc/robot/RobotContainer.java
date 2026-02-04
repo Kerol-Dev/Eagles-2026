@@ -18,7 +18,7 @@ import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
 import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
-
+import frc.robot.Constants.FieldConstants;
 import frc.robot.Constants.OperatorConstants;
 import frc.robot.subsystems.ClimbSubsystem;
 import frc.robot.subsystems.HopperSubsystem;
@@ -93,7 +93,8 @@ public class RobotContainer {
                 hopperSubsystem.setDefaultCommand(hopperSubsystem.cmdIndexToSensor());
                 shooterSubsystem.setDefaultCommand(
                                 new RunCommand(() -> shooterSubsystem.setAutoRPM(drivebase.getPose(),
-                                                drivebase.isRedAlliance()), shooterSubsystem));
+                                                drivebase.isRedAlliance(), drivebase.getFieldVelocity()),
+                                                shooterSubsystem));
                 ledSubsystem.setDefaultCommand(
                                 new RunCommand(() -> ledSubsystem.updateState(
                                                 m_intakeOpen,
@@ -102,19 +103,18 @@ public class RobotContainer {
                                                 ledSubsystem));
                 turretSubsystem.setDefaultCommand(
                                 new RunCommand(() -> turretSubsystem.aimAtTarget(drivebase.getPose(),
-                                                drivebase.isRedAlliance()), turretSubsystem));
+                                                drivebase.isRedAlliance(), drivebase.getFieldVelocity()),
+                                                turretSubsystem));
 
                 driverXbox.start().onTrue(Commands.runOnce(drivebase::zeroGyro));
 
                 // Shoot: spin up -> wait for speed -> feed
                 driverXbox.rightTrigger()
                                 .whileTrue(
-                                                shooterSubsystem.cmdEnableShooter(true)
-                                                                .andThen(new WaitUntilCommand(
-                                                                                () -> shooterSubsystem
-                                                                                                .atShooterSpeed()))
+                                                shooterSubsystem.cmdManualShooterCommand()
                                                                 .andThen(hopperSubsystem.cmdPush(0.5)))
                                 .onFalse(shooterSubsystem.cmdEnableShooter(false).andThen(hopperSubsystem.cmdStop()));
+
                 // Intake open/close toggle (flip boolean first, then choose)
                 driverXbox.rightBumper().onTrue(
                                 Commands.runOnce(() -> m_intakeOpen = !m_intakeOpen)
@@ -123,15 +123,18 @@ public class RobotContainer {
                                                                 intakeSubsystem.cmdClose(),
                                                                 () -> m_intakeOpen)));
 
-                // Intake rollers
+                // Intake Reverse rollers
                 driverXbox.leftTrigger()
                                 .whileTrue(intakeSubsystem.cmdRunRollerRpm(-3000))
                                 .onFalse(intakeSubsystem.cmdStopRoller());
 
                 // Climb
-                driverXbox.b().onTrue(fullClimbSequence()).whileFalse(climbSubsystem.cmdStop());
+                driverXbox.b().onTrue(
+                                drivebase.pathFindToPose(() -> drivebase.isRedAlliance() ? FieldConstants.kClimbPoseRed
+                                                : FieldConstants.kClimbPoseBlue).andThen(fullClimbSequence()))
+                                .whileFalse(climbSubsystem.cmdStop());
                 driverXbox.y().onTrue(
-                                climbSubsystem.cmdLeadScrewToPos(0).andThen(climbSubsystem.cmdElevatorToPos(0)));
+                                climbSubsystem.cmdLeadScrewToPos(0).alongWith(climbSubsystem.cmdElevatorToPos(0)));
         }
 
         private Command generateShootCommand() {

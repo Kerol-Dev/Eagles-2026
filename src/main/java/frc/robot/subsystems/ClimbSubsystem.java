@@ -12,6 +12,7 @@ import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.DutyCycleOut;
 import com.ctre.phoenix6.controls.MotionMagicVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.revrobotics.PersistMode;
 import com.revrobotics.ResetMode;
 import com.revrobotics.spark.ClosedLoopSlot;
@@ -57,6 +58,8 @@ public class ClimbSubsystem extends SubsystemBase {
         elevatorCfg.SoftwareLimitSwitch.ReverseSoftLimitEnable = true;
         elevatorCfg.SoftwareLimitSwitch.ReverseSoftLimitThreshold = kElevatorReverseLimit;
         elevatorCfg.CurrentLimits.SupplyCurrentLimit = kElevatorCurrentLimit;
+        elevatorCfg.CurrentLimits.SupplyCurrentLimitEnable = true;
+        elevatorCfg.MotorOutput.NeutralMode = NeutralModeValue.Brake;
         m_elevator.getConfigurator().apply(elevatorCfg);
     }
 

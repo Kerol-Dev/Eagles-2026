@@ -3,12 +3,17 @@ package frc.robot.subsystems;
 import static frc.robot.Constants.Shooter.*;
 
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap; // Linear curve tool
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
 import frc.robot.Constants;
-import frc.robot.util.TurretAimMath;
+import frc.robot.Constants.FieldConstants;
+import frc.robot.util.SimpleTurretAim;
 
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.Follower;
@@ -41,7 +46,7 @@ public class ShooterSubsystem extends SubsystemBase {
         cfg.Slot0.kD = kShooterD;
         cfg.Slot0.kV = kShooterV;
 
-        cfg.CurrentLimits.StatorCurrentLimit = 60;
+        cfg.CurrentLimits.StatorCurrentLimit = kShooterCurrentLimitA;
         cfg.CurrentLimits.StatorCurrentLimitEnable = true;
         m_shooterTop.getConfigurator().apply(cfg);
         m_shooterBottom.getConfigurator().apply(cfg);
@@ -81,11 +86,12 @@ public class ShooterSubsystem extends SubsystemBase {
     }
 
     // ---------------- Aiming ----------------
-    public void setAutoRPM(Pose2d robotPose, boolean isRed) {
-        var targetInfo = TurretAimMath.solveForBasket(robotPose, isRed);
-        double distance = targetInfo.distanceMeters();
-
-        double autoRpm = m_shooterRpmByDistance.get(distance);
+    public void setAutoRPM(Pose2d robotPose, boolean isRed, ChassisSpeeds robotVSpeeds) {
+        Translation2d target = isRed ? FieldConstants.kHubPoseRed.getTranslation()
+                : FieldConstants.kHubPoseBlue.getTranslation();
+        var targetInfo = SimpleTurretAim.solve(robotPose, target, robotVSpeeds, 0.0, 0.0);
+        double distance = targetInfo.distance();
+        double autoRpm = m_shooterRpmByDistance.get(distance) + targetInfo.shooterRpmAdjust();
         setShooterRpm(autoRpm);
     }
 
@@ -96,6 +102,11 @@ public class ShooterSubsystem extends SubsystemBase {
 
     public Command cmdEnableShooter(boolean enable) {
         return runOnce(() -> setShooterEnabled(enable)).withName("Shooter.Enable(" + enable + ")");
+    }
+
+    public Command cmdManualShooterCommand() {
+        return Commands.runOnce(() -> cmdEnableShooter(true), this)
+                .andThen(new WaitUntilCommand(() -> atShooterSpeed()));
     }
 
     @Override
