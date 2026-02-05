@@ -14,7 +14,7 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
 import frc.robot.Constants;
 import frc.robot.Constants.FieldConstants;
-import frc.robot.util.SimpleTurretAim;
+import frc.robot.util.TargetUtils;
 
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.Follower;
@@ -90,9 +90,9 @@ public class ShooterSubsystem extends SubsystemBase {
     public void setAutoRPM(Pose2d robotPose, boolean isRed, ChassisSpeeds robotVSpeeds) {
         Translation2d target = isRed ? FieldConstants.kHubPoseRed.getTranslation()
                 : FieldConstants.kHubPoseBlue.getTranslation();
-        var targetInfo = SimpleTurretAim.solve(robotPose, target, robotVSpeeds, 0.0, 0.0);
-        double distance = targetInfo.distance();
-        double autoRpm = m_shooterRpmByDistance.get(distance) + targetInfo.shooterRpmAdjust();
+        var targetInfo = TargetUtils.solve(robotPose, target, robotVSpeeds);
+        double distance = targetInfo.effectiveDistance();
+        double autoRpm = m_shooterRpmByDistance.get(distance);
         setShooterRpm(autoRpm);
     }
 

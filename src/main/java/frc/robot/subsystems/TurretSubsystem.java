@@ -13,7 +13,7 @@ import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 import frc.robot.Constants.FieldConstants;
-import frc.robot.util.SimpleTurretAim;
+import frc.robot.util.TargetUtils;
 
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.MotionMagicVoltage;
@@ -127,8 +127,8 @@ public class TurretSubsystem extends SubsystemBase {
     // ---------------- Aiming ----------------
     public void aimAtTarget(Pose2d robotPose, boolean isRed, ChassisSpeeds robotVSpeeds) {
         Translation2d target = isRed ? FieldConstants.kHubPoseRed.getTranslation() : FieldConstants.kHubPoseBlue.getTranslation();
-        var targetInfo = SimpleTurretAim.solve(robotPose, target, robotVSpeeds, 0.0, 0.0);
-        double distance = targetInfo.distance();
+        var targetInfo = TargetUtils.solve(robotPose, target, robotVSpeeds);
+        double distance = targetInfo.effectiveDistance();
 
         setTurretAngleDeg(targetInfo.turretYaw().getDegrees(), targetInfo.turretFF());
         double autoHoodDeg = m_hoodAngleByDistance.get(distance);
