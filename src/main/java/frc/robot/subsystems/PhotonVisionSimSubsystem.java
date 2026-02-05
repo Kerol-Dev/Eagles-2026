@@ -8,6 +8,7 @@ import java.util.function.Supplier;
 import org.photonvision.PhotonCamera;
 import org.photonvision.PhotonPoseEstimator;
 import org.photonvision.PhotonPoseEstimator.PoseStrategy;
+import org.littletonrobotics.junction.Logger;
 import org.photonvision.EstimatedRobotPose;
 
 import org.photonvision.simulation.PhotonCameraSim;
@@ -60,6 +61,7 @@ public class PhotonVisionSimSubsystem extends edu.wpi.first.wpilibj2.command.Sub
         m_estBack = makePoseEstimator(kRobotToCamBack);
 
         Field2d debugField = m_visionSim.getDebugField();
+
         SmartDashboard.putData("PhotonSimField", debugField);
     }
 
@@ -106,11 +108,10 @@ public class PhotonVisionSimSubsystem extends edu.wpi.first.wpilibj2.command.Sub
                 robotPose3d.getZ() + offset,
                 robotPose3d.getRotation());
 
-        SmartDashboard.putNumberArray("3D/RobotPose", pose3dToArray(robotPose3d));
-        SmartDashboard.putNumberArray("3D/CamRight", pose3dToArray(robotPose3d.transformBy(kRobotToCamRight)));
-        SmartDashboard.putNumberArray("3D/CamLeft", pose3dToArray(robotPose3d.transformBy(kRobotToCamLeft)));
-        SmartDashboard.putNumberArray("3D/CamBack", pose3dToArray(robotPose3d.transformBy(kRobotToCamBack)));
-
+        Logger.recordOutput("3D/RobotPose", pose3dToArray(robotPose3d));
+        Logger.recordOutput("3D/CamRight", pose3dToArray(robotPose3d.transformBy(kRobotToCamRight)));
+        Logger.recordOutput("3D/CamLeft", pose3dToArray(robotPose3d.transformBy(kRobotToCamLeft)));
+        Logger.recordOutput("3D/CamBack", pose3dToArray(robotPose3d.transformBy(kRobotToCamBack)));
         applyEstimator(m_estRight, m_camRight, robotPose2d);
         applyEstimator(m_estLeft, m_camLeft, robotPose2d);
         applyEstimator(m_estBack, m_camBack, robotPose2d);

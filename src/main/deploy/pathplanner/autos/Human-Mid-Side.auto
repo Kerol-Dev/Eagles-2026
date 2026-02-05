@@ -11,9 +11,22 @@
           }
         },
         {
-          "type": "named",
+          "type": "race",
           "data": {
-            "name": "Shoot_All_Sim"
+            "commands": [
+              {
+                "type": "named",
+                "data": {
+                  "name": "Shoot_All_Sim"
+                }
+              },
+              {
+                "type": "wait",
+                "data": {
+                  "waitTime": 3.0
+                }
+              }
+            ]
           }
         },
         {
@@ -23,9 +36,22 @@
           }
         },
         {
-          "type": "wait",
+          "type": "race",
           "data": {
-            "waitTime": 3.0
+            "commands": [
+              {
+                "type": "named",
+                "data": {
+                  "name": "Shoot_All_Sim"
+                }
+              },
+              {
+                "type": "wait",
+                "data": {
+                  "waitTime": 3.0
+                }
+              }
+            ]
           }
         },
         {
@@ -43,13 +69,13 @@
         {
           "type": "wait",
           "data": {
-            "waitTime": 1.25
+            "waitTime": 1.5
           }
         },
         {
           "type": "named",
           "data": {
-            "name": "Shoot_All"
+            "name": "Shoot_All_Sim"
           }
         }
       ]

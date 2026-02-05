@@ -73,11 +73,19 @@ public class RobotContainer {
                 new EventTrigger("Bump").whileTrue(new InstantCommand(() -> passingBump = true))
                                 .onFalse(new InstantCommand(() -> passingBump = false));
 
+                new EventTrigger("SpinShooter").onTrue(Commands.runOnce(() -> shooterSubsystem.cmdEnableShooter(true), shooterSubsystem));
+                new EventTrigger("Shoot").onTrue(generateShootCommand()).onFalse(shooterSubsystem.cmdEnableShooter(false)
+                                .andThen(hopperSubsystem.cmdStop()));
+                new EventTrigger("ShootSim").onTrue(new InstantCommand(() -> ballSim.setShooting(true))).onFalse(new InstantCommand(() -> ballSim.setShooting(false)));
+
                 NamedCommands.registerCommand("Shoot_All",
                                 generateShootCommand());
+                NamedCommands.registerCommand("Stop_Shooting", shooterSubsystem.cmdEnableShooter(false)
+                                .andThen(hopperSubsystem.cmdStop()));
                 NamedCommands.registerCommand("Shoot_All_Sim",
                                 new InstantCommand(() -> ballSim.setShooting(true)).andThen(new WaitCommand(5))
                                                 .andThen(new InstantCommand(() -> ballSim.setShooting(false))));
+                NamedCommands.registerCommand("Stop_Shooting_Sim", new InstantCommand(() -> ballSim.setShooting(false)));
                 NamedCommands.registerCommand("Climb_L1_Sim",
                                 new InstantCommand(() -> climbed = !climbed));
                 NamedCommands.registerCommand("Climb_L1",
@@ -134,7 +142,7 @@ public class RobotContainer {
                                                 : FieldConstants.kClimbPoseBlue).andThen(fullClimbSequence()))
                                 .whileFalse(climbSubsystem.cmdStop());
                 driverXbox.y().onTrue(
-                                climbSubsystem.cmdLeadScrewToPos(0).alongWith(climbSubsystem.cmdElevatorToPos(0)));
+                                climbSubsystem.cmdLeadScrewToPos(0).andThen(climbSubsystem.cmdElevatorToPos(0)));
         }
 
         private Command generateShootCommand() {

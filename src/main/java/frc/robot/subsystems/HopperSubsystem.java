@@ -2,10 +2,11 @@ package frc.robot.subsystems;
 
 import static frc.robot.Constants.Hopper.*;
 
+import org.littletonrobotics.junction.Logger;
+
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
@@ -86,7 +87,8 @@ public class HopperSubsystem extends SubsystemBase {
 
         if (!Constants.USE_DEBUGGING)
             return;
-        SmartDashboard.putBoolean("Hopper/Ball Sensor", hasBall());
-        SmartDashboard.putBoolean("Hopper/Hopper Empty 2s", isEmptyFor2s());
+            
+        Logger.recordOutput("Hopper/Ball Sensor", hasBall());
+        Logger.recordOutput("Hopper/Hopper Empty 2s", isEmptyFor2s());
     }
 }

@@ -2,13 +2,14 @@ package frc.robot.subsystems;
 
 import static frc.robot.Constants.Shooter.*;
 
+import org.littletonrobotics.junction.Logger;
+
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap; // Linear curve tool
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.Encoder;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 import frc.robot.Constants.FieldConstants;
@@ -133,7 +134,8 @@ public class TurretSubsystem extends SubsystemBase {
         double autoHoodDeg = m_hoodAngleByDistance.get(distance);
         setHoodAngleDeg(m_shooterEnabled ? autoHoodDeg : kHoodMinDeg);
 
-        SmartDashboard.putNumber("Turret/Auto_Target_Distance", distance);
+        
+        Logger.recordOutput("Turret/Auto_Target_Distance", distance);
     }
 
     // ---------------- Commands ----------------
@@ -150,10 +152,10 @@ public class TurretSubsystem extends SubsystemBase {
         updateHoodControl();
 
         if (Constants.USE_DEBUGGING) {
-            SmartDashboard.putNumber("Turret/Hood_Deg", getHoodAngleDeg());
-            SmartDashboard.putNumber("Turret/Hood_Deg_Target", m_hoodTargetDeg);
-            SmartDashboard.putNumber("Turret/Turret_Deg", getTurretAngleDeg());
-            SmartDashboard.putNumber("Turret/Turret_Deg_Target", m_turretTargetDeg);
+            Logger.recordOutput("Turret/Hood_Deg", getHoodAngleDeg());
+            Logger.recordOutput("Turret/Hood_Deg_Target", m_hoodTargetDeg);
+            Logger.recordOutput("Turret/Turret_Deg", getTurretAngleDeg());
+            Logger.recordOutput("Turret/Turret_Deg_Target", m_turretTargetDeg);
         }
     }
 }

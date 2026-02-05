@@ -73,8 +73,8 @@
   "constraintZones": [
     {
       "name": "Constraints Zone",
-      "minWaypointRelativePos": 0.7953020134228178,
-      "maxWaypointRelativePos": 2.355704697986587,
+      "minWaypointRelativePos": 0.0,
+      "maxWaypointRelativePos": 2.3053691275167782,
       "constraints": {
         "maxVelocity": 2.0,
         "maxAcceleration": 5.0,
@@ -88,6 +88,12 @@
   "pointTowardsZones": [],
   "eventMarkers": [
     {
+      "name": "ShootSim",
+      "waypointRelativePos": 0.0,
+      "endWaypointRelativePos": 2.8087248322147746,
+      "command": null
+    },
+    {
       "name": "Run_Intake",
       "waypointRelativePos": 1.001677852348994,
       "endWaypointRelativePos": 2.390939597315427,
@@ -98,7 +104,7 @@
     "maxVelocity": 4.5,
     "maxAcceleration": 10.0,
     "maxAngularVelocity": 720.0,
-    "maxAngularAcceleration": 2500.0,
+    "maxAngularAcceleration": 2000.0,
     "nominalVoltage": 12.0,
     "unlimited": false
   },

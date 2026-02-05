@@ -2,11 +2,12 @@ package frc.robot.subsystems;
 
 import static frc.robot.Constants.Shooter.*;
 
+import org.littletonrobotics.junction.Logger;
+
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Translation2d;
-import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap; // Linear curve tool
+import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -113,8 +114,8 @@ public class ShooterSubsystem extends SubsystemBase {
     public void periodic() {
 
         if (Constants.USE_DEBUGGING) {
-            SmartDashboard.putNumber("Shooter/Actual_RPM", getShooterTopRpm());
-            SmartDashboard.putNumber("Shooter/Target_RPM", m_shooterTargetRpm);
+            Logger.recordOutput("Shooter/Actual_RPM", getShooterTopRpm());
+            Logger.recordOutput("Shooter/Target_RPM", m_shooterTargetRpm);
         }
     }
 }

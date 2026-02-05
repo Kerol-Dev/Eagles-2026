@@ -2,7 +2,8 @@ package frc.robot.subsystems;
 
 import static frc.robot.Constants.Intake.*;
 
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import org.littletonrobotics.junction.Logger;
+
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
@@ -153,11 +154,12 @@ public class IntakeSubsystem extends SubsystemBase {
         if (!Constants.USE_DEBUGGING)
             return;
 
-        SmartDashboard.putBoolean("Intake/Intake_Is_Open",
+            
+        Logger.recordOutput("Intake/Intake_Is_Open",
                 getAngleDeg() >= (kOpenAngleDeg + kClosedAngleDeg) / 2);
-        SmartDashboard.putNumber("Intake/Intake_Angle_Deg", getAngleDeg());
-        SmartDashboard.putNumber("Intake/Intake_Angle_Target_Deg", getAngleTargetDeg());
-        SmartDashboard.putNumber("Intake/Intake_Roller_RPM", getRollerRpm());
-        SmartDashboard.putNumber("Intake/Intake_Roller_RPM_Target", m_rollerTargetRpm);
+        Logger.recordOutput("Intake/Intake_Angle_Deg", getAngleDeg());
+        Logger.recordOutput("Intake/Intake_Angle_Target_Deg", getAngleTargetDeg());
+        Logger.recordOutput("Intake/Intake_Roller_RPM", getRollerRpm());
+        Logger.recordOutput("Intake/Intake_Roller_RPM_Target", m_rollerTargetRpm);
     }
 }
