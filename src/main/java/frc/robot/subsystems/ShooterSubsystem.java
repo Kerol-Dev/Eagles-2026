@@ -4,38 +4,38 @@ import static frc.robot.Constants.Shooter.*;
 
 import org.littletonrobotics.junction.Logger;
 
-import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Translation2d;
-import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
-import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.Commands;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
-import frc.robot.Constants;
-import frc.robot.Constants.FieldConstants;
-import frc.robot.util.TargetUtils;
-
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.Follower;
 import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.MotorAlignmentValue;
 
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
+import frc.robot.Constants;
+import frc.robot.util.TargetUtils;
+
 public class ShooterSubsystem extends SubsystemBase {
     // ---------------- Shooter flywheel (double Kraken) ----------------
-    private final TalonFX m_shooterTop = new TalonFX(kShooterTopKrakenCanId);
-    private final TalonFX m_shooterBottom = new TalonFX(kShooterBottomKrakenCanId);
-    private final VelocityVoltage m_shooterVelReq = new VelocityVoltage(0);
+    private final TalonFX m_shooterRight = new TalonFX(kShooterTopKrakenCanId);
+    private final TalonFX m_shooterLeft = new TalonFX(kShooterBottomKrakenCanId);
+
+    private final VelocityVoltage m_shooterVelReq = new VelocityVoltage(0.0).withSlot(0);
+
     private double m_shooterTargetRpm = 0.0;
     private boolean m_shooterEnabled = false;
 
     // ---------------- Interpolation Tables (The Curves) ----------------
+    // distance (m) -> shooter RPM
     private final InterpolatingDoubleTreeMap m_shooterRpmByDistance = new InterpolatingDoubleTreeMap();
 
     public ShooterSubsystem() {
         configureShooter();
-
         initInterpolationTables();
     }
 
@@ -49,10 +49,13 @@ public class ShooterSubsystem extends SubsystemBase {
 
         cfg.CurrentLimits.StatorCurrentLimit = kShooterCurrentLimitA;
         cfg.CurrentLimits.StatorCurrentLimitEnable = true;
-        m_shooterTop.getConfigurator().apply(cfg);
-        m_shooterBottom.getConfigurator().apply(cfg);
 
-        m_shooterBottom.setControl(new Follower(m_shooterTop.getDeviceID(), MotorAlignmentValue.Aligned));
+        m_shooterRight.getConfigurator().apply(cfg);
+        m_shooterLeft.getConfigurator().apply(cfg);
+
+        m_shooterLeft.setControl(
+            new Follower(m_shooterRight.getDeviceID(), MotorAlignmentValue.Opposed)
+        );
     }
 
     private void initInterpolationTables() {
@@ -65,16 +68,25 @@ public class ShooterSubsystem extends SubsystemBase {
     // ---------------- Shooter Logic ----------------
     public void setShooterRpm(double targetRpm) {
         m_shooterTargetRpm = targetRpm;
-        if (m_shooterEnabled) {
-            double targetVel = targetRpm / 60.0; // RPM to RPS
-            m_shooterTop.setControl(m_shooterVelReq.withVelocity(targetVel));
+
+        if (!m_shooterEnabled) {
+            return;
         }
+
+        double targetVelRps = targetRpm / 60.0;
+        m_shooterRight.setControl(m_shooterVelReq.withVelocity(targetVelRps));
     }
 
     public void setShooterEnabled(boolean enabled) {
         m_shooterEnabled = enabled;
+
         if (!enabled) {
-            setShooterRpm(0.0);
+            // Zero target and actively stop when disabled.
+            m_shooterTargetRpm = 0.0;
+            m_shooterRight.stopMotor();
+        } else {
+            // Re-apply the last target RPM when re-enabled.
+            setShooterRpm(m_shooterTargetRpm);
         }
     }
 
@@ -83,36 +95,55 @@ public class ShooterSubsystem extends SubsystemBase {
     }
 
     public double getShooterTopRpm() {
-        return m_shooterTop.getVelocity().getValueAsDouble() * 60.0;
+        return m_shooterRight.getVelocity().getValueAsDouble() * 60.0;
     }
 
     // ---------------- Aiming ----------------
     public void setAutoRPM(Pose2d robotPose, boolean isRed, ChassisSpeeds robotVSpeeds) {
-        Translation2d target = isRed ? FieldConstants.kHubPoseRed.getTranslation()
-                : FieldConstants.kHubPoseBlue.getTranslation();
+        Translation2d target = TargetUtils.solveTargetPose(robotPose, isRed).getTranslation();
         var targetInfo = TargetUtils.solve(robotPose, target, robotVSpeeds);
         double distance = targetInfo.effectiveDistance();
+
         double autoRpm = m_shooterRpmByDistance.get(distance);
+
         setShooterRpm(autoRpm);
+
+        Logger.recordOutput("Shooter/AutoRPM", autoRpm);
     }
 
     // ---------------- Commands ----------------
     public Command cmdStopShooter() {
-        return runOnce(() -> setShooterRpm(0)).withName("Shooter.Stop");
+        return runOnce(
+                () -> {
+                    setShooterEnabled(false);
+                })
+                .withName("Shooter.Stop");
     }
 
     public Command cmdEnableShooter(boolean enable) {
-        return runOnce(() -> setShooterEnabled(enable)).withName("Shooter.Enable(" + enable + ")");
+        return runOnce(() -> setShooterEnabled(enable))
+                .withName("Shooter.Enable(" + enable + ")");
     }
 
+    /**
+     * Example: manual spin-up to a given RPM and wait until at speed.
+     */
+    public Command cmdSpinUpAndWait(double rpm) {
+        return cmdEnableShooter(true)
+                .andThen(runOnce(() -> setShooterRpm(rpm)))
+                .andThen(new WaitUntilCommand(this::atShooterSpeed))
+                .withName("Shooter.SpinUpAndWait(" + rpm + ")");
+    }
+
+
     public Command cmdManualShooterCommand() {
-        return Commands.runOnce(() -> cmdEnableShooter(true), this)
-                .andThen(new WaitUntilCommand(() -> atShooterSpeed()));
+        return cmdEnableShooter(true)
+                .andThen(new WaitUntilCommand(this::atShooterSpeed))
+                .withName("Shooter.ManualWait");
     }
 
     @Override
     public void periodic() {
-
         if (Constants.USE_DEBUGGING) {
             Logger.recordOutput("Shooter/Actual_RPM", getShooterTopRpm());
             Logger.recordOutput("Shooter/Target_RPM", m_shooterTargetRpm);

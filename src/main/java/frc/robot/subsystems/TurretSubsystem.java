@@ -12,7 +12,6 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
-import frc.robot.Constants.FieldConstants;
 import frc.robot.util.TargetUtils;
 
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
@@ -126,7 +125,7 @@ public class TurretSubsystem extends SubsystemBase {
 
     // ---------------- Aiming ----------------
     public void aimAtTarget(Pose2d robotPose, boolean isRed, ChassisSpeeds robotVSpeeds) {
-        Translation2d target = isRed ? FieldConstants.kHubPoseRed.getTranslation() : FieldConstants.kHubPoseBlue.getTranslation();
+        Translation2d target = TargetUtils.solveTargetPose(robotPose, isRed).getTranslation();
         var targetInfo = TargetUtils.solve(robotPose, target, robotVSpeeds);
         double distance = targetInfo.effectiveDistance();
 
@@ -136,6 +135,7 @@ public class TurretSubsystem extends SubsystemBase {
 
         
         Logger.recordOutput("Turret/Auto_Target_Distance", distance);
+        Logger.recordOutput("Turret/DegreeTarget", new Pose2d(robotPose.getTranslation(), robotPose.getRotation().plus(targetInfo.turretYaw())));
     }
 
     // ---------------- Commands ----------------

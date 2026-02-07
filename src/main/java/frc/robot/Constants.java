@@ -17,10 +17,14 @@ public final class Constants {
     }
 
     public static final class FieldConstants {
-        public static final Pose2d kHubPoseRed = new Pose2d(10, 10, new Rotation2d());
-        public static final Pose2d kHubPoseBlue = new Pose2d(16.54, 10, new Rotation2d());
-        public static final Pose2d kClimbPoseRed = new Pose2d(10, 10, new Rotation2d());
-        public static final Pose2d kClimbPoseBlue = new Pose2d(16.54, 10, new Rotation2d());
+        public static final Pose2d kHubPoseRed = new Pose2d(11.930, 4.030, new Rotation2d());
+        public static final Pose2d kHubPoseBlue = new Pose2d(4.630, 4.030, new Rotation2d());
+        public static final Pose2d kClimbPoseRed = new Pose2d(14.900, 3.900, Rotation2d.k180deg);
+        public static final Pose2d kClimbPoseBlue = new Pose2d(1.617, 3.317, new Rotation2d());
+        public static final Pose2d kFeedPoseBlueLeft = new Pose2d(1.8, 6.3, new Rotation2d());
+        public static final Pose2d kFeedPoseBlueRight = new Pose2d(1.8, 1.4, new Rotation2d());
+        public static final Pose2d kFeedPoseRedLeft = new Pose2d(15.0, 1.4, new Rotation2d());
+        public static final Pose2d kFeedPoseRedRight = new Pose2d(15.0, 6.3, new Rotation2d());
     }
 
     public static final class Intake {
@@ -28,10 +32,11 @@ public final class Constants {
         public static final int kAngleMotorCanId = 21;
         public static final int kRollerMotorCanId = 22;
 
-        // Angle setpoints
+        // Intake setpoints
         public static final double kOpenAngleDeg = 70.0;
         public static final double kClosedAngleDeg = 5.0;
-
+        public static final double kIntakeRollerRPM = 3000;
+        
         // Angle closed-loop gains
         public static final double kAngleP = 2.0;
         public static final double kAngleI = 0.0;
@@ -148,6 +153,11 @@ public final class Constants {
         public static final double kElevatorReverseLimit = 0.0;
         public static final int kElevatorCurrentLimit = 60;
         public static final double kElevatorTolerance = 1.0;
+
+        // Elevator Setpoints
+        public static final double kElevatorUpSetpoint = 100;
+        public static final double kElevatorDownSetpoint = 5;
+        public static final double kElevatorLeadEngagedSetpoint = 100;
     }
 
     public static final class Hopper {

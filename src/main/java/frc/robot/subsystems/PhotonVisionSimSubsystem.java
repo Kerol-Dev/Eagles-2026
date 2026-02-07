@@ -5,31 +5,32 @@ import static frc.robot.Constants.VisionSim.*;
 import java.util.Optional;
 import java.util.function.Supplier;
 
+import org.littletonrobotics.junction.Logger;
+import org.photonvision.EstimatedRobotPose;
 import org.photonvision.PhotonCamera;
 import org.photonvision.PhotonPoseEstimator;
 import org.photonvision.PhotonPoseEstimator.PoseStrategy;
-import org.littletonrobotics.junction.Logger;
-import org.photonvision.EstimatedRobotPose;
-
 import org.photonvision.simulation.PhotonCameraSim;
 import org.photonvision.simulation.VisionSystemSim;
 
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
 import edu.wpi.first.math.VecBuilder;
+import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
+import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.RobotContainer;
 
-public class PhotonVisionSimSubsystem extends edu.wpi.first.wpilibj2.command.SubsystemBase {
+public class PhotonVisionSimSubsystem extends SubsystemBase {
     private final Supplier<Pose2d> m_robotPoseSupplier;
-    private final edu.wpi.first.math.estimator.SwerveDrivePoseEstimator m_poseEstimator;
+    private final SwerveDrivePoseEstimator m_poseEstimator;
 
     private final AprilTagFieldLayout m_tagLayout;
-
     private final VisionSystemSim m_visionSim;
 
     private final PhotonCamera m_camRight = new PhotonCamera(kCamRightName);
@@ -42,7 +43,7 @@ public class PhotonVisionSimSubsystem extends edu.wpi.first.wpilibj2.command.Sub
 
     public PhotonVisionSimSubsystem(
             Supplier<Pose2d> robotPoseSupplier,
-            edu.wpi.first.math.estimator.SwerveDrivePoseEstimator poseEstimator) {
+            SwerveDrivePoseEstimator poseEstimator) {
 
         m_robotPoseSupplier = robotPoseSupplier;
         m_poseEstimator = poseEstimator;
@@ -56,25 +57,25 @@ public class PhotonVisionSimSubsystem extends edu.wpi.first.wpilibj2.command.Sub
         setupSimCamera(m_camLeft, kRobotToCamLeft);
         setupSimCamera(m_camBack, kRobotToCamBack);
 
-        m_estRight = makePoseEstimator(kRobotToCamRight);
-        m_estLeft = makePoseEstimator(kRobotToCamLeft);
-        m_estBack = makePoseEstimator(kRobotToCamBack);
+        m_estRight = makePoseEstimator(m_camRight, kRobotToCamRight);
+        m_estLeft = makePoseEstimator(m_camLeft, kRobotToCamLeft);
+        m_estBack = makePoseEstimator(m_camBack, kRobotToCamBack);
 
         Field2d debugField = m_visionSim.getDebugField();
-
         SmartDashboard.putData("PhotonSimField", debugField);
     }
 
-    private void setupSimCamera(PhotonCamera cam, edu.wpi.first.math.geometry.Transform3d robotToCam) {
-        if (!RobotBase.isSimulation())
+    private void setupSimCamera(PhotonCamera cam, Transform3d robotToCam) {
+        if (!RobotBase.isSimulation()) {
             return;
+        }
 
         PhotonCameraSim camSim = new PhotonCameraSim(cam);
         m_visionSim.addCamera(camSim, robotToCam);
     }
 
-    private PhotonPoseEstimator makePoseEstimator(edu.wpi.first.math.geometry.Transform3d robotToCam) {
-        var est = new PhotonPoseEstimator(
+    private PhotonPoseEstimator makePoseEstimator(PhotonCamera cam, Transform3d robotToCam) {
+        PhotonPoseEstimator est = new PhotonPoseEstimator(
                 m_tagLayout,
                 PoseStrategy.MULTI_TAG_PNP_ON_COPROCESSOR,
                 robotToCam);
@@ -84,22 +85,26 @@ public class PhotonVisionSimSubsystem extends edu.wpi.first.wpilibj2.command.Sub
     }
 
     public void update() {
-        Pose2d robotPose = m_robotPoseSupplier.get();
-        m_visionSim.update(robotPose);
+        Pose2d trueRobotPose = m_robotPoseSupplier.get();
+        m_visionSim.update(trueRobotPose);
     }
 
     @Override
     public void periodic() {
+        // Current fused pose estimate
         Pose2d robotPose2d = m_poseEstimator.getEstimatedPosition();
         Pose3d robotPose3d = new Pose3d(robotPose2d);
 
+        // Simple climb Z-offset animation for 3D viz
         double offset = SmartDashboard.getNumber("ClimbOffset", 0.0);
         final double increment = 0.01;
+
         if (RobotContainer.climbed) {
             offset = Math.min(0.5, offset + increment);
         } else {
             offset = Math.max(0.0, offset - increment);
         }
+
         SmartDashboard.putNumber("ClimbOffset", offset);
 
         robotPose3d = new Pose3d(
@@ -108,48 +113,56 @@ public class PhotonVisionSimSubsystem extends edu.wpi.first.wpilibj2.command.Sub
                 robotPose3d.getZ() + offset,
                 robotPose3d.getRotation());
 
+        // Log robot and camera poses for AdvantageScope
         Logger.recordOutput("3D/RobotPose", pose3dToArray(robotPose3d));
         Logger.recordOutput("3D/CamRight", pose3dToArray(robotPose3d.transformBy(kRobotToCamRight)));
         Logger.recordOutput("3D/CamLeft", pose3dToArray(robotPose3d.transformBy(kRobotToCamLeft)));
         Logger.recordOutput("3D/CamBack", pose3dToArray(robotPose3d.transformBy(kRobotToCamBack)));
+
+        // Apply vision from each camera
         applyEstimator(m_estRight, m_camRight, robotPose2d);
         applyEstimator(m_estLeft, m_camLeft, robotPose2d);
         applyEstimator(m_estBack, m_camBack, robotPose2d);
     }
 
     private double[] pose3dToArray(Pose3d pose) {
-        var quart = pose.getRotation().getQuaternion();
+        var quat = pose.getRotation().getQuaternion();
         return new double[] {
                 pose.getX(),
                 pose.getY(),
                 pose.getZ(),
-                quart.getW(),
-                quart.getX(),
-                quart.getY(),
-                quart.getZ()
+                quat.getW(),
+                quat.getX(),
+                quat.getY(),
+                quat.getZ()
         };
     }
 
     private void applyEstimator(PhotonPoseEstimator estimator, PhotonCamera cam, Pose2d refPose) {
-        estimator.setReferencePose(refPose);
-        var pipelineResult = cam.getLatestResult();
+        estimator.setReferencePose(new Pose3d(refPose));
 
-        if (pipelineResult == null || !pipelineResult.hasTargets())
+        var result = cam.getLatestResult();
+        if (!result.hasTargets()) {
             return;
-
-        Optional<EstimatedRobotPose> result = estimator.update(pipelineResult);
-        if (result.isPresent()) {
-            EstimatedRobotPose est = result.get();
-            Pose2d estPose2d = est.estimatedPose.toPose2d();
-
-            double distance = refPose.getTranslation().getDistance(estPose2d.getTranslation());
-            if (distance > 1.0)
-                return;
-
-            m_poseEstimator.addVisionMeasurement(
-                    estPose2d,
-                    est.timestampSeconds,
-                    VecBuilder.fill(kStdDevX, kStdDevY, kStdDevTheta));
         }
+
+        Optional<EstimatedRobotPose> maybeEst = estimator.update(result);
+        if (maybeEst.isEmpty()) {
+            return;
+        }
+
+        EstimatedRobotPose est = maybeEst.get();
+        Pose2d estPose2d = est.estimatedPose.toPose2d();
+
+        // Reject clearly-bad estimates
+        double distance = refPose.getTranslation().getDistance(estPose2d.getTranslation());
+        if (distance > 1.0) {
+            return;
+        }
+
+        m_poseEstimator.addVisionMeasurement(
+                estPose2d,
+                est.timestampSeconds,
+                VecBuilder.fill(kStdDevX, kStdDevY, kStdDevTheta));
     }
 }
